@@ -1,0 +1,1034 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Radar Localization · Global Trajectory</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #071018;
+        --line: rgba(142, 180, 201, 0.2);
+        --text: #f2f8fb;
+        --muted: #9bb4c2;
+        --cyan: #51d8ee;
+        --gt: #51d8ee;
+        --radar-primary: #ff815f;
+        --temporal: #b795ff;
+        --single-frame: #57e39b;
+        --vo-primary: #ffd166;
+        --pure-vo: #f2f8fb;
+        --pure-radar: #ff5f9e;
+        --good: #57e39b;
+        --mid: #ffd166;
+        --bad: #ff6b7a;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #071018;
+        color: var(--text);
+        font-family: Inter, "Segoe UI", Arial, sans-serif;
+      }
+
+      .stage {
+        width: 100vw;
+        height: 100vh;
+        display: grid;
+        grid-template-rows: 52px 1fr;
+        gap: 8px;
+        padding: 8px 10px 10px;
+      }
+
+      .topbar {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+      }
+
+      .brand {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        white-space: nowrap;
+      }
+
+      .brand em {
+        color: var(--cyan);
+        font-style: normal;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.16em;
+      }
+
+      .brand h1 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 800;
+      }
+
+      .transport {
+        display: grid;
+        grid-template-columns: auto auto minmax(120px, 1fr) auto;
+        gap: 8px;
+        align-items: center;
+        min-width: 0;
+      }
+
+      .transport button {
+        height: 34px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #10202b;
+        color: var(--text);
+        font-size: 14px;
+        cursor: pointer;
+      }
+
+      #btn-restart { width: 40px; }
+
+      #btn-play {
+        min-width: 76px;
+        padding: 0 12px;
+        font-weight: 800;
+        color: #041117;
+        background: var(--cyan);
+        border-color: transparent;
+      }
+
+      .speed-group { display: flex; gap: 4px; }
+
+      .speed-btn {
+        width: 48px;
+        font-weight: 700;
+      }
+
+      .speed-btn.is-active {
+        color: #041117;
+        background: var(--cyan);
+        border-color: transparent;
+      }
+
+      #frame-slider { width: 100%; accent-color: var(--cyan); }
+
+      .clock {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        font-size: 14px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+
+      .clock strong {
+        color: var(--text);
+        font-size: 16px;
+      }
+
+      #status {
+        color: var(--cyan);
+        font-size: 14px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      #status.error { color: #ff7d7d; }
+
+      .lang-switch {
+        display: flex;
+        gap: 4px;
+      }
+
+      .lang-switch button {
+        height: 28px;
+        padding: 0 8px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #10202b;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .lang-switch button.is-active {
+        color: #041117;
+        background: var(--cyan);
+        border-color: transparent;
+      }
+
+      .flow {
+        min-height: 0;
+        min-width: 0;
+        container-type: size;
+        display: flex;
+        gap: 8px;
+      }
+
+      .input-column {
+        flex: 0 0 auto;
+        width: min(320px, calc((100cqh - 8px) * 4 / 7), 26%);
+        min-width: 220px;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .sensor {
+        position: relative;
+        min-height: 0;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #020507;
+      }
+
+      .sensor.stereo { flex: 3 1 0; }
+      .sensor.radar { flex: 4 1 0; }
+
+      .sensor img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        object-position: center;
+        display: block;
+        background: #020507;
+      }
+
+      .tag {
+        position: absolute;
+        z-index: 3;
+        top: 8px;
+        left: 8px;
+        padding: 4px 8px;
+        border-radius: 6px;
+        background: rgba(5, 15, 22, 0.82);
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .radar-scan {
+        position: absolute;
+        z-index: 2;
+        left: 50%;
+        top: 50%;
+        width: 42%;
+        height: 1px;
+        transform-origin: left center;
+        background: linear-gradient(90deg, rgba(81, 216, 238, 0.8), transparent);
+        animation: scan 3.4s linear infinite;
+        pointer-events: none;
+      }
+
+      @keyframes scan { to { transform: rotate(360deg); } }
+
+      .pose-columns {
+        flex: 1 1 0;
+        min-width: 0;
+        min-height: 0;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-rows: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .pose-card {
+        position: relative;
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #07121a;
+      }
+
+      .pose-card.is-best {
+        border-color: rgba(87, 227, 155, 0.7);
+        box-shadow: 0 0 0 1px rgba(87, 227, 155, 0.35);
+      }
+
+      .pose-card canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      .hud {
+        position: absolute;
+        inset: 0;
+        z-index: 4;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 8px;
+        pointer-events: none;
+      }
+
+      .pose-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px;
+        border-radius: 8px;
+        background: rgba(5, 15, 22, 0.78);
+        width: fit-content;
+        max-width: 100%;
+      }
+
+      .pose-title h3 {
+        margin: 0;
+        font-size: 16px;
+        line-height: 1.15;
+      }
+
+      .pose-title p {
+        margin: 1px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .color-dot {
+        width: 10px;
+        height: 10px;
+        flex: 0 0 auto;
+        border-radius: 50%;
+        box-shadow: 0 0 8px currentColor;
+      }
+
+      .pure-vo-dot { color: var(--pure-vo); background: var(--pure-vo); }
+      .pure-radar-dot { color: var(--pure-radar); background: var(--pure-radar); }
+      .single-frame-dot { color: var(--single-frame); background: var(--single-frame); }
+      .temporal-dot { color: var(--temporal); background: var(--temporal); }
+      .vo-primary-dot { color: var(--vo-primary); background: var(--vo-primary); }
+      .radar-primary-dot { color: var(--radar-primary); background: var(--radar-primary); }
+
+      .rank {
+        margin-left: 6px;
+        padding: 2px 7px;
+        border-radius: 999px;
+        font: 800 13px ui-monospace, Consolas, monospace;
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .pose-card.is-best .rank {
+        color: #041117;
+        background: var(--good);
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+      }
+
+      .metric {
+        padding: 6px 8px 5px;
+        border-radius: 8px;
+        background: rgba(5, 15, 22, 0.82);
+      }
+
+      .metric span {
+        display: block;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 1px;
+        font: 800 22px/1.05 ui-monospace, Consolas, monospace;
+        letter-spacing: -0.03em;
+      }
+
+      .metric[data-level="good"] strong { color: var(--good); }
+      .metric[data-level="mid"] strong { color: var(--mid); }
+      .metric[data-level="bad"] strong { color: var(--bad); }
+
+      .pure-vo-card { border-color: rgba(242, 248, 251, 0.28); }
+      .pure-radar-card { border-color: rgba(255, 95, 158, 0.34); }
+      .single-frame-card { border-color: rgba(87, 227, 155, 0.32); }
+      .temporal-card { border-color: rgba(183, 149, 255, 0.38); }
+      .vo-primary-card { border-color: rgba(255, 209, 102, 0.36); }
+      .radar-primary-card { border-color: rgba(255, 129, 95, 0.38); }
+    </style>
+  </head>
+  <body>
+    <div class="stage">
+      <header class="topbar">
+        <div class="brand">
+          <em>RADAR</em>
+          <h1 data-i18n="title">Global Trajectory</h1>
+          <small>Synthetic demo · 240 frames</small>
+        </div>
+        <section class="transport">
+          <div>
+            <button type="button" id="btn-restart" title="Restart (R)">⏮</button>
+            <button type="button" id="btn-play" title="Pause (Space)">Pause</button>
+          </div>
+          <div class="speed-group">
+            <button type="button" class="speed-btn" data-speed="0.5">0.5×</button>
+            <button type="button" class="speed-btn is-active" data-speed="1">1×</button>
+            <button type="button" class="speed-btn" data-speed="2">2×</button>
+            <button type="button" class="speed-btn" data-speed="4">4×</button>
+          </div>
+          <input id="frame-slider" type="range" min="0" max="0" value="0" />
+          <div class="clock">
+            <strong id="frame-label">Frame —</strong>
+            <span id="timestamp-label"></span>
+          </div>
+        </section>
+        <div class="lang-switch">
+          <button type="button" data-lang="en" class="is-active">EN</button>
+          <button type="button" data-lang="zh">中文</button>
+        </div>
+        <div id="status">Loading…</div>
+      </header>
+
+      <main class="flow">
+        <section class="input-column">
+          <article class="sensor">
+            <div class="tag">Stereo Centre</div>
+            <img id="stereo-image" alt="Stereo centre RGB frame" />
+          </article>
+          <article class="sensor">
+            <div class="tag">Radar BEV</div>
+            <img id="radar-image" alt="Radar bird's-eye-view frame" />
+            <div class="radar-scan" aria-hidden="true"></div>
+          </article>
+        </section>
+
+        <section class="pose-columns">
+          <article class="pose-card pure-vo-card" data-method="pure-vo">
+            <canvas id="pure-vo-map"></canvas>
+            <div class="hud">
+              <div class="pose-title">
+                <span class="color-dot pure-vo-dot"></span>
+                <div>
+                  <h3>Pure VO</h3>
+                  <p>Visual odometry</p>
+                </div>
+                <span class="rank" data-rank="pure-vo">—</span>
+              </div>
+              <div class="metrics">
+                <div class="metric" data-metric="pure-vo-ate"><span>MEAN ATE</span><strong>—</strong></div>
+                <div class="metric" data-metric="pure-vo-are"><span>MEAN ARE</span><strong>—</strong></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="pose-card pure-radar-card" data-method="pure-radar">
+            <canvas id="pure-radar-map"></canvas>
+            <div class="hud">
+              <div class="pose-title">
+                <span class="color-dot pure-radar-dot"></span>
+                <div>
+                  <h3>Pure Radar</h3>
+                  <p>Radar odometry</p>
+                </div>
+                <span class="rank" data-rank="pure-radar">—</span>
+              </div>
+              <div class="metrics">
+                <div class="metric" data-metric="pure-radar-ate"><span>MEAN ATE</span><strong>—</strong></div>
+                <div class="metric" data-metric="pure-radar-are"><span>MEAN ARE</span><strong>—</strong></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="pose-card single-frame-card" data-method="single-frame">
+            <canvas id="single-frame-map"></canvas>
+            <div class="hud">
+              <div class="pose-title">
+                <span class="color-dot single-frame-dot"></span>
+                <div>
+                  <h3>Single-Frame Model</h3>
+                  <p>V86</p>
+                </div>
+                <span class="rank" data-rank="single-frame">—</span>
+              </div>
+              <div class="metrics">
+                <div class="metric" data-metric="single-frame-ate"><span>MEAN ATE</span><strong>—</strong></div>
+                <div class="metric" data-metric="single-frame-are"><span>MEAN ARE</span><strong>—</strong></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="pose-card temporal-card" data-method="temporal">
+            <canvas id="temporal-map"></canvas>
+            <div class="hud">
+              <div class="pose-title">
+                <span class="color-dot temporal-dot"></span>
+                <div>
+                  <h3>Temporal Model</h3>
+                  <p>V113</p>
+                </div>
+                <span class="rank" data-rank="temporal">—</span>
+              </div>
+              <div class="metrics">
+                <div class="metric" data-metric="temporal-ate"><span>MEAN ATE</span><strong>—</strong></div>
+                <div class="metric" data-metric="temporal-are"><span>MEAN ARE</span><strong>—</strong></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="pose-card vo-primary-card" data-method="vo-primary">
+            <canvas id="vo-primary-map"></canvas>
+            <div class="hud">
+              <div class="pose-title">
+                <span class="color-dot vo-primary-dot"></span>
+                <div>
+                  <h3>VO-Primary</h3>
+                  <p>V118</p>
+                </div>
+                <span class="rank" data-rank="vo-primary">—</span>
+              </div>
+              <div class="metrics">
+                <div class="metric" data-metric="vo-primary-ate"><span>MEAN ATE</span><strong>—</strong></div>
+                <div class="metric" data-metric="vo-primary-are"><span>MEAN ARE</span><strong>—</strong></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="pose-card radar-primary-card" data-method="radar-primary">
+            <canvas id="radar-primary-map"></canvas>
+            <div class="hud">
+              <div class="pose-title">
+                <span class="color-dot radar-primary-dot"></span>
+                <div>
+                  <h3>Radar-Primary</h3>
+                  <p>CFEAR-lite + Model</p>
+                </div>
+                <span class="rank" data-rank="radar-primary">—</span>
+              </div>
+              <div class="metrics">
+                <div class="metric" data-metric="radar-primary-ate"><span>MEAN ATE</span><strong>—</strong></div>
+                <div class="metric" data-metric="radar-primary-are"><span>MEAN ARE</span><strong>—</strong></div>
+              </div>
+            </div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+      (() => {
+        "use strict";
+
+        const config = window.DEMO_CONFIG;
+        const status = document.getElementById("status");
+        const radarImage = document.getElementById("radar-image");
+        const stereoImage = document.getElementById("stereo-image");
+        const playBtn = document.getElementById("btn-play");
+        const slider = document.getElementById("frame-slider");
+
+        const F = Object.freeze({
+          frameIndex: 0,
+          timestamp: 1,
+          gtNorth: 2,
+          gtEast: 3,
+          gtYaw: 5,
+          radarPrimaryNorth: 6,
+          radarPrimaryEast: 7,
+          radarPrimaryYaw: 9,
+          temporalNorth: 10,
+          temporalEast: 11,
+          temporalYaw: 13,
+          singleFrameNorth: 14,
+          singleFrameEast: 15,
+          singleFrameYaw: 17,
+          voPrimaryNorth: 18,
+          voPrimaryEast: 19,
+          voPrimaryYaw: 21,
+          pureVONorth: 22,
+          pureVOEast: 23,
+          pureVOYaw: 25,
+          pureRadarNorth: 26,
+          pureRadarEast: 27,
+          pureRadarYaw: 29,
+          stereoTimestamp: 31,
+        });
+
+        const colors = Object.freeze({
+          grid: "rgba(142, 180, 201, 0.12)",
+          axis: "rgba(172, 204, 220, 0.5)",
+          gt: "#51d8ee",
+          radarPrimary: "#ff815f",
+          temporal: "#b795ff",
+          singleFrame: "#57e39b",
+          voPrimary: "#ffd166",
+          pureVO: "#f2f8fb",
+          pureRadar: "#ff5f9e",
+          text: "#d5e4ec",
+        });
+
+        const METHODS = Object.freeze([
+          { key: "pure-vo", north: F.pureVONorth, east: F.pureVOEast, yaw: F.pureVOYaw, color: colors.pureVO },
+          { key: "pure-radar", north: F.pureRadarNorth, east: F.pureRadarEast, yaw: F.pureRadarYaw, color: colors.pureRadar },
+          { key: "single-frame", north: F.singleFrameNorth, east: F.singleFrameEast, yaw: F.singleFrameYaw, color: colors.singleFrame },
+          { key: "temporal", north: F.temporalNorth, east: F.temporalEast, yaw: F.temporalYaw, color: colors.temporal },
+          { key: "vo-primary", north: F.voPrimaryNorth, east: F.voPrimaryEast, yaw: F.voPrimaryYaw, color: colors.voPrimary },
+          { key: "radar-primary", north: F.radarPrimaryNorth, east: F.radarPrimaryEast, yaw: F.radarPrimaryYaw, color: colors.radarPrimary },
+        ].map((spec) => {
+          const canvas = document.getElementById(`${spec.key}-map`);
+          return {
+            ...spec,
+            canvas,
+            context: canvas.getContext("2d"),
+            card: document.querySelector(`[data-method="${spec.key}"]`),
+            ateEl: document.querySelector(`[data-metric="${spec.key}-ate"]`),
+            areEl: document.querySelector(`[data-metric="${spec.key}-are"]`),
+            rankEl: document.querySelector(`[data-rank="${spec.key}"]`),
+            shownATE: 0,
+            shownARE: 0,
+          };
+        }));
+
+        const PRELOAD_AHEAD = 12;
+        const MAX_CACHED_IMAGES = 32;
+
+        let clip = [];
+        let globalBounds = null;
+        let currentIndex = 0;
+        let paused = false;
+        let lastStep = 0;
+        let speed = 1;
+        const radarImageCache = new Map();
+        const stereoImageCache = new Map();
+        const ate = {};
+        const are = {};
+        const meanATE = {};
+        const meanARE = {};
+
+        function fail(message) {
+          status.textContent = message;
+          status.classList.add("error");
+          console.error(message);
+        }
+
+        function ensureTrailingSlash(path) {
+          return path.endsWith("/") ? path : `${path}/`;
+        }
+
+        function radarImageUrl(timestamp) {
+          return `${ensureTrailingSlash(config.radarImageDirectory)}${timestamp}.jpg`;
+        }
+
+        function stereoImageUrl(timestamp) {
+          return `${ensureTrailingSlash(config.stereoImageDirectory)}${timestamp}.jpg`;
+        }
+
+        function loadPoseScript(path) {
+          return new Promise((resolve, reject) => {
+            const script = document.createElement("script");
+            script.src = path;
+            script.onload = resolve;
+            script.onerror = () => reject(new Error(`Could not load pose data: ${path}`));
+            document.head.appendChild(script);
+          });
+        }
+
+        function wrapDegrees(value) {
+          let wrapped = value;
+          while (wrapped > 180) wrapped -= 360;
+          while (wrapped < -180) wrapped += 360;
+          return wrapped;
+        }
+
+        function computeGlobalBounds(rows) {
+          let minNorth = Infinity;
+          let maxNorth = -Infinity;
+          let minEast = Infinity;
+          let maxEast = -Infinity;
+          rows.forEach((row) => {
+            minNorth = Math.min(minNorth, row[F.gtNorth]);
+            maxNorth = Math.max(maxNorth, row[F.gtNorth]);
+            minEast = Math.min(minEast, row[F.gtEast]);
+            maxEast = Math.max(maxEast, row[F.gtEast]);
+          });
+          const padN = Math.max((maxNorth - minNorth) * 0.06, 12);
+          const padE = Math.max((maxEast - minEast) * 0.06, 12);
+          return {
+            minNorth: minNorth - padN,
+            maxNorth: maxNorth + padN,
+            minEast: minEast - padE,
+            maxEast: maxEast + padE,
+          };
+        }
+
+        function precomputeErrors(rows) {
+          METHODS.forEach((method) => {
+            const n = rows.length;
+            const instATE = new Float64Array(n);
+            const instARE = new Float64Array(n);
+            const runATE = new Float64Array(n);
+            const runARE = new Float64Array(n);
+            let sumATE = 0;
+            let sumARE = 0;
+            for (let i = 0; i < n; i += 1) {
+              const row = rows[i];
+              const p = Math.hypot(row[method.north] - row[F.gtNorth], row[method.east] - row[F.gtEast]);
+              const y = Math.abs(wrapDegrees(row[method.yaw] - row[F.gtYaw]));
+              instATE[i] = p;
+              instARE[i] = y;
+              sumATE += p;
+              sumARE += y;
+              runATE[i] = sumATE / (i + 1);
+              runARE[i] = sumARE / (i + 1);
+            }
+            ate[method.key] = instATE;
+            are[method.key] = instARE;
+            meanATE[method.key] = runATE;
+            meanARE[method.key] = runARE;
+            method.shownATE = runATE[0];
+            method.shownARE = runARE[0];
+          });
+        }
+
+        function fitCanvas(canvas) {
+          const dpr = window.devicePixelRatio || 1;
+          const rect = canvas.getBoundingClientRect();
+          const width = Math.max(2, Math.round(rect.width * dpr));
+          const height = Math.max(2, Math.round(rect.height * dpr));
+          if (canvas.width !== width || canvas.height !== height) {
+            canvas.width = width;
+            canvas.height = height;
+          }
+        }
+
+        function project(canvas) {
+          const pad = Math.max(16, Math.min(canvas.width, canvas.height) * 0.035);
+          const innerW = canvas.width - pad * 2;
+          const innerH = canvas.height - pad * 2;
+          const spanN = globalBounds.maxNorth - globalBounds.minNorth;
+          const spanE = globalBounds.maxEast - globalBounds.minEast;
+          const scale = Math.min(innerW / spanE, innerH / spanN);
+          const usedW = spanE * scale;
+          const usedH = spanN * scale;
+          return {
+            scale,
+            ox: pad + (innerW - usedW) / 2,
+            oy: pad + (innerH - usedH) / 2,
+          };
+        }
+
+        function toCanvas(north, east, canvas) {
+          const view = project(canvas);
+          const x = view.ox + (east - globalBounds.minEast) * view.scale;
+          const y = canvas.height - view.oy - (north - globalBounds.minNorth) * view.scale;
+          return [x, y];
+        }
+
+        function drawGrid(context, canvas) {
+          context.clearRect(0, 0, canvas.width, canvas.height);
+          context.fillStyle = "#07121a";
+          context.fillRect(0, 0, canvas.width, canvas.height);
+          const step = Math.max(48, Math.min(canvas.width, canvas.height) / 8);
+          context.strokeStyle = colors.grid;
+          context.lineWidth = Math.max(1, canvas.width / 900);
+          for (let x = step; x < canvas.width; x += step) {
+            context.beginPath();
+            context.moveTo(x, 0);
+            context.lineTo(x, canvas.height);
+            context.stroke();
+          }
+          for (let y = step; y < canvas.height; y += step) {
+            context.beginPath();
+            context.moveTo(0, y);
+            context.lineTo(canvas.width, y);
+            context.stroke();
+          }
+          const label = Math.max(14, Math.round(canvas.width / 42));
+          context.fillStyle = colors.text;
+          context.font = `800 ${label}px Segoe UI, Arial`;
+          context.fillText("N", 14, label + 8);
+          context.fillText("E", canvas.width - label - 10, canvas.height - 12);
+        }
+
+        function drawTrack(context, canvas, northField, eastField, endIndex, color, width) {
+          const stride = Math.max(1, Math.floor((endIndex + 1) / 1600));
+          context.strokeStyle = color;
+          context.lineWidth = width;
+          context.lineJoin = "round";
+          context.lineCap = "round";
+          context.beginPath();
+          let started = false;
+          for (let index = 0; index <= endIndex; index += stride) {
+            const row = clip[index];
+            const [x, y] = toCanvas(row[northField], row[eastField], canvas);
+            if (!started) {
+              context.moveTo(x, y);
+              started = true;
+            } else {
+              context.lineTo(x, y);
+            }
+          }
+          const last = clip[endIndex];
+          const [lx, ly] = toCanvas(last[northField], last[eastField], canvas);
+          context.lineTo(lx, ly);
+          context.stroke();
+        }
+
+        function drawVehicleIcon(context, x, y, yawDeg, color, scale) {
+          const yaw = (yawDeg * Math.PI) / 180;
+          const width = 22 * scale;
+          const length = 38 * scale;
+          const corner = 4 * scale;
+          context.save();
+          context.translate(x, y);
+          context.rotate(yaw);
+          context.shadowColor = "rgba(0, 0, 0, 0.75)";
+          context.shadowBlur = 6 * scale;
+          context.fillStyle = color;
+          context.beginPath();
+          context.roundRect(-width / 2, -length / 2, width, length, corner);
+          context.fill();
+          context.shadowBlur = 0;
+          context.fillStyle = "rgba(7, 18, 26, 0.88)";
+          context.beginPath();
+          context.roundRect(-width * 0.34, -length * 0.24, width * 0.68, length * 0.46, 3 * scale);
+          context.fill();
+          context.fillStyle = "#fff2a8";
+          for (const side of [-1, 1]) {
+            context.beginPath();
+            context.arc(side * width * 0.29, -length * 0.43, 2.1 * scale, 0, Math.PI * 2);
+            context.fill();
+          }
+          context.strokeStyle = "rgba(255, 255, 255, 0.88)";
+          context.lineWidth = 1.4 * scale;
+          context.beginPath();
+          context.roundRect(-width / 2, -length / 2, width, length, corner);
+          context.stroke();
+          context.restore();
+        }
+
+        function drawGlobal(spec, row, endIndex) {
+          const { canvas, context } = spec;
+          fitCanvas(canvas);
+          const unit = Math.min(canvas.width, canvas.height);
+          const line = Math.max(2.4, unit / 180);
+          const car = Math.max(0.1, unit / 680);
+          drawGrid(context, canvas);
+          drawTrack(context, canvas, F.gtNorth, F.gtEast, endIndex, colors.gt, line);
+          drawTrack(context, canvas, spec.north, spec.east, endIndex, spec.color, line + 0.8);
+          const [gx, gy] = toCanvas(row[F.gtNorth], row[F.gtEast], canvas);
+          const [px, py] = toCanvas(row[spec.north], row[spec.east], canvas);
+          context.strokeStyle = "rgba(255, 107, 122, 0.9)";
+          context.lineWidth = Math.max(1.6, unit / 260);
+          context.setLineDash([6, 5]);
+          context.beginPath();
+          context.moveTo(gx, gy);
+          context.lineTo(px, py);
+          context.stroke();
+          context.setLineDash([]);
+          drawVehicleIcon(context, gx, gy, row[F.gtYaw], colors.gt, car * 0.85);
+          drawVehicleIcon(context, px, py, row[spec.yaw], spec.color, car);
+        }
+
+        function ateLevel(metres) {
+          if (metres < 5) return "good";
+          if (metres < 20) return "mid";
+          return "bad";
+        }
+
+        function areLevel(degrees) {
+          if (degrees < 2) return "good";
+          if (degrees < 8) return "mid";
+          return "bad";
+        }
+
+        function formatErr(value) {
+          if (!Number.isFinite(value)) return "—";
+          if (Math.abs(value) >= 100) return value.toFixed(0);
+          if (Math.abs(value) >= 10) return value.toFixed(1);
+          return value.toFixed(2);
+        }
+
+        function setMetric(el, value, unit, level) {
+          if (!el) return;
+          el.querySelector("strong").textContent = `${formatErr(value)} ${unit}`;
+          el.dataset.level = level;
+        }
+
+        function updateMetrics(index) {
+          const ranked = METHODS
+            .map((method) => ({ key: method.key, ate: meanATE[method.key][index] }))
+            .sort((a, b) => a.ate - b.ate);
+          const order = Object.fromEntries(ranked.map((item, i) => [item.key, i + 1]));
+          const bestKey = ranked[0].key;
+          METHODS.forEach((method) => {
+            const targetATE = meanATE[method.key][index];
+            const targetARE = meanARE[method.key][index];
+            method.shownATE += (targetATE - method.shownATE) * 0.45;
+            method.shownARE += (targetARE - method.shownARE) * 0.45;
+            if (Math.abs(method.shownATE - targetATE) < 0.01) method.shownATE = targetATE;
+            if (Math.abs(method.shownARE - targetARE) < 0.01) method.shownARE = targetARE;
+            setMetric(method.ateEl, method.shownATE, "m", ateLevel(method.shownATE));
+            setMetric(method.areEl, method.shownARE, "°", areLevel(method.shownARE));
+            if (method.rankEl) method.rankEl.textContent = `#${order[method.key]}`;
+            if (method.card) method.card.classList.toggle("is-best", method.key === bestKey);
+          });
+        }
+
+        function render(index) {
+          const row = clip[index];
+          const cachedRadar = radarImageCache.get(row[F.timestamp]);
+          const cachedStereo = stereoImageCache.get(row[F.stereoTimestamp]);
+          radarImage.src = cachedRadar ? cachedRadar.src : radarImageUrl(row[F.timestamp]);
+          stereoImage.src = cachedStereo ? cachedStereo.src : stereoImageUrl(row[F.stereoTimestamp]);
+          document.getElementById("frame-label").textContent = `Frame ${row[F.frameIndex]}`;
+          METHODS.forEach((spec) => drawGlobal(spec, row, index));
+          updateMetrics(index);
+          slider.value = String(index);
+          playBtn.textContent = paused ? "播放" : "暂停";
+          status.textContent = paused ? "Paused" : `${index + 1} / ${clip.length}`;
+          warmImageCache(index);
+        }
+
+        function loadCachedImage(cache, key, url, label) {
+          if (cache.has(key)) return Promise.resolve(cache.get(key));
+          return new Promise((resolve, reject) => {
+            const image = new Image();
+            image.onload = () => {
+              cache.set(key, image);
+              while (cache.size > MAX_CACHED_IMAGES) cache.delete(cache.keys().next().value);
+              resolve(image);
+            };
+            image.onerror = () => reject(new Error(`Missing ${label} image: ${url}`));
+            image.src = url;
+          });
+        }
+
+        function loadRadarImage(row) {
+          return loadCachedImage(radarImageCache, row[F.timestamp], radarImageUrl(row[F.timestamp]), "radar");
+        }
+
+        function loadStereoImage(row) {
+          return loadCachedImage(
+            stereoImageCache,
+            row[F.stereoTimestamp],
+            stereoImageUrl(row[F.stereoTimestamp]),
+            "stereo",
+          );
+        }
+
+        function warmImageCache(index) {
+          for (let offset = 0; offset < Math.min(PRELOAD_AHEAD, clip.length); offset += 1) {
+            const row = clip[(index + offset) % clip.length];
+            loadRadarImage(row).catch((error) => fail(error.message));
+            loadStereoImage(row).catch((error) => fail(error.message));
+          }
+        }
+
+        async function preloadInitialImages() {
+          const initial = clip.slice(0, Math.min(PRELOAD_AHEAD, clip.length));
+          let loaded = 0;
+          for (const row of initial) {
+            await Promise.all([loadRadarImage(row), loadStereoImage(row)]);
+            loaded += 1;
+            status.textContent = `Loading ${loaded} / ${initial.length}`;
+          }
+        }
+
+        function animate(timestamp) {
+          const interval = config.intervalMs / speed;
+          if (!paused && timestamp - lastStep >= interval) {
+            currentIndex = (currentIndex + 1) % clip.length;
+            render(currentIndex);
+            lastStep = timestamp;
+          } else if (paused) {
+            updateMetrics(currentIndex);
+          }
+          window.requestAnimationFrame(animate);
+        }
+
+        function bindControls() {
+          playBtn.addEventListener("click", () => {
+            paused = !paused;
+            render(currentIndex);
+          });
+          document.getElementById("btn-restart").addEventListener("click", () => {
+            currentIndex = 0;
+            lastStep = performance.now();
+            render(currentIndex);
+          });
+          document.querySelectorAll(".speed-btn").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              speed = Number(btn.dataset.speed);
+              document.querySelectorAll(".speed-btn").forEach((node) => {
+                node.classList.toggle("is-active", node === btn);
+              });
+            });
+          });
+          slider.addEventListener("input", () => {
+            currentIndex = Number(slider.value);
+            paused = true;
+            render(currentIndex);
+          });
+          window.addEventListener("keydown", (event) => {
+            if (event.code === "Space") {
+              event.preventDefault();
+              paused = !paused;
+              render(currentIndex);
+            } else if (event.key.toLowerCase() === "r") {
+              currentIndex = 0;
+              lastStep = performance.now();
+              render(currentIndex);
+            } else if (event.key === "ArrowRight") {
+              event.preventDefault();
+              paused = true;
+              currentIndex = Math.min(clip.length - 1, currentIndex + 1);
+              render(currentIndex);
+            } else if (event.key === "ArrowLeft") {
+              event.preventDefault();
+              paused = true;
+              currentIndex = Math.max(0, currentIndex - 1);
+              render(currentIndex);
+            }
+          });
+          window.addEventListener("resize", () => {
+            if (clip.length) render(currentIndex);
+          });
+        }
+
+        async function start() {
+          if (!config) throw new Error("DEMO_CONFIG is missing");
+          await loadPoseScript(config.poseDataScript);
+          const data = window.RADAR_POSE_METHOD_DATA;
+          if (!data || !Array.isArray(data.frames)) {
+            throw new Error("RADAR_POSE_METHOD_DATA is missing or invalid");
+          }
+          const startIndex = Number(config.startFrame);
+          const requestedFrameCount = Number(config.frameCount);
+          const availableFrameCount = data.frames.length - startIndex;
+          const frameCount = requestedFrameCount > 0 ? requestedFrameCount : availableFrameCount;
+          clip = data.frames.slice(startIndex, startIndex + frameCount);
+          if (clip.length === 0) throw new Error("No frames loaded");
+          globalBounds = computeGlobalBounds(clip);
+          precomputeErrors(clip);
+          slider.max = String(clip.length - 1);
+          await preloadInitialImages();
+          bindControls();
+          currentIndex = 0;
+          render(currentIndex);
+          lastStep = performance.now();
+          window.requestAnimationFrame(animate);
+        }
+
+        start().catch((error) => fail(error.message));
+      })();
+    </script>
+  </body>
+</html>

@@ -11,7 +11,12 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 
 ROOT = Path(__file__).resolve().parents[1]
-FILES = ("index.html", "styles.css", "favicon.svg")
+FILES = ["index.html", "styles.css", "favicon.svg"]
+FILES.extend(
+    path.relative_to(ROOT).as_posix()
+    for path in sorted((ROOT / "radar").rglob("*"))
+    if path.is_file()
+)
 
 
 def git(*args: str) -> str:

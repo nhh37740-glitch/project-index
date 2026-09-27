@@ -2,11 +2,7 @@
 set -euo pipefail
 image="${1:?image tag required}"
 name=project-index
-radar_root=/opt/project-index/radar
 args=(--detach --name "$name" --restart unless-stopped --read-only --tmpfs /tmp:size=16m --cap-drop ALL --security-opt no-new-privileges --memory 64m --cpus 0.25 -p 127.0.0.1:8092:8080)
-if [ -d "$radar_root" ]; then
-  args+=(--mount "type=bind,source=$radar_root,target=/usr/share/nginx/html/radar,readonly")
-fi
 previous="$(sudo docker inspect -f '{{.Config.Image}}' "$name" 2>/dev/null || true)"
 rollback() {
   if [ -n "$previous" ]; then

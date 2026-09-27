@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Radar Localization</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="stage">
+      <header class="hero">
+        <p class="eyebrow">RADAR LOCALIZATION</p>
+        <h1>Where is the car, and which way is it facing?</h1>
+        <p class="subtitle">Synthetic demo data · Radar input · Six pose estimates · 240 frames</p>
+      </header>
+
+      <main class="flow" aria-label="Radar localization animation">
+        <section class="input-column" aria-label="Sensor views and ground truth">
+          <article class="camera-card card">
+            <div class="card-heading compact-heading">
+              <div>
+                <h2>Stereo Centre View</h2>
+                <p>Forward RGB context</p>
+              </div>
+            </div>
+            <div class="camera-frame">
+              <img id="stereo-image" alt="Current stereo centre RGB frame" />
+            </div>
+          </article>
+
+          <article class="radar-card card">
+            <div class="card-heading compact-heading">
+              <span class="step">1</span>
+              <div>
+                <h2>Radar BEV Input</h2>
+                <p>Bird's-eye radar view</p>
+              </div>
+            </div>
+            <div class="radar-frame">
+              <img id="radar-image" alt="Current radar bird's-eye-view frame" />
+              <div class="radar-scan" aria-hidden="true"></div>
+              <div class="sensor-mark" aria-hidden="true"></div>
+            </div>
+            <div class="frame-readout">
+              <span id="frame-label">Frame —</span>
+              <span id="timestamp-label">Timestamp —</span>
+            </div>
+          </article>
+
+          <article class="pose-card card gt-card">
+            <div class="pose-title">
+              <span class="color-dot gt-dot"></span>
+              <div>
+                <h3>Ground Truth</h3>
+                <p>Reference pose</p>
+              </div>
+            </div>
+            <div class="pose-map-frame">
+              <canvas id="gt-map" width="600" height="500"></canvas>
+              <canvas id="gt-global-map" class="pose-global-map" width="240" height="180"></canvas>
+            </div>
+            <div class="pose-values">
+              <div><span>North</span><strong id="gt-north">—</strong></div>
+              <div><span>East</span><strong id="gt-east">—</strong></div>
+              <div><span>Down</span><strong id="gt-down">—</strong></div>
+              <div><span>Yaw</span><strong id="gt-yaw">—</strong></div>
+            </div>
+          </article>
+        </section>
+
+        <section class="model-flow" aria-label="Radar pose model">
+          <div class="signal signal-left"></div>
+          <div class="model-node">
+            <span>AI</span>
+            <small>Radar Pose<br />Model</small>
+          </div>
+          <div class="signal signal-right"></div>
+        </section>
+
+        <section class="output-area">
+          <div class="output-heading">
+            <span class="step">2</span>
+            <div>
+              <h2>Global Pose Comparison</h2>
+              <p>NED coordinates · North up · East right</p>
+            </div>
+          </div>
+
+          <div class="pose-columns">
+            <article class="pose-card card radar-primary-card">
+              <div class="pose-title">
+                <span class="color-dot radar-primary-dot"></span>
+                <div>
+                  <h3>CFEAR-lite + Model</h3>
+                  <p>Radar-primary fusion</p>
+                </div>
+              </div>
+              <div class="pose-map-frame">
+                <canvas id="radar-primary-map" width="600" height="500"></canvas>
+                <canvas id="radar-primary-global-map" class="pose-global-map" width="240" height="180"></canvas>
+              </div>
+              <div class="pose-values">
+                <div><span>North</span><strong id="radar-primary-north">—</strong></div>
+                <div><span>East</span><strong id="radar-primary-east">—</strong></div>
+                <div><span>Down</span><strong id="radar-primary-down">—</strong></div>
+                <div><span>Yaw</span><strong id="radar-primary-yaw">—</strong></div>
+              </div>
+            </article>
+
+            <article class="pose-card card temporal-card">
+              <div class="pose-title">
+                <span class="color-dot temporal-dot"></span>
+                <div>
+                  <h3>Temporal Model</h3>
+                  <p>V113</p>
+                </div>
+              </div>
+              <div class="pose-map-frame">
+                <canvas id="temporal-map" width="600" height="500"></canvas>
+                <canvas id="temporal-global-map" class="pose-global-map" width="240" height="180"></canvas>
+              </div>
+              <div class="pose-values">
+                <div><span>North</span><strong id="temporal-north">—</strong></div>
+                <div><span>East</span><strong id="temporal-east">—</strong></div>
+                <div><span>Down</span><strong id="temporal-down">—</strong></div>
+                <div><span>Yaw</span><strong id="temporal-yaw">—</strong></div>
+              </div>
+            </article>
+
+            <article class="pose-card card single-frame-card">
+              <div class="pose-title">
+                <span class="color-dot single-frame-dot"></span>
+                <div>
+                  <h3>Single Frame Model</h3>
+                  <p>V86 · no temporal constraint</p>
+                </div>
+              </div>
+              <div class="pose-map-frame">
+                <canvas id="single-frame-map" width="600" height="500"></canvas>
+                <canvas id="single-frame-global-map" class="pose-global-map" width="240" height="180"></canvas>
+              </div>
+              <div class="pose-values">
+                <div><span>North</span><strong id="single-frame-north">—</strong></div>
+                <div><span>East</span><strong id="single-frame-east">—</strong></div>
+                <div><span>Down</span><strong id="single-frame-down">—</strong></div>
+                <div><span>Yaw</span><strong id="single-frame-yaw">—</strong></div>
+              </div>
+            </article>
+
+            <article class="pose-card card vo-primary-card">
+              <div class="pose-title">
+                <span class="color-dot vo-primary-dot"></span>
+                <div>
+                  <h3>VO + Model</h3>
+                  <p>V118 · tuned VO-primary</p>
+                </div>
+                <span id="vo-primary-state" class="state-badge vo-primary-badge">VO</span>
+              </div>
+              <div class="pose-map-frame">
+                <canvas id="vo-primary-map" width="600" height="500"></canvas>
+                <canvas id="vo-primary-global-map" class="pose-global-map" width="240" height="180"></canvas>
+              </div>
+              <div class="pose-values">
+                <div><span>North</span><strong id="vo-primary-north">—</strong></div>
+                <div><span>East</span><strong id="vo-primary-east">—</strong></div>
+                <div><span>Down</span><strong id="vo-primary-down">—</strong></div>
+                <div><span>Yaw</span><strong id="vo-primary-yaw">—</strong></div>
+              </div>
+            </article>
+
+            <article class="pose-card card pure-vo-card">
+              <div class="pose-title">
+                <span class="color-dot pure-vo-dot"></span>
+                <div>
+                  <h3>Pure VO</h3>
+                  <p>GT-aligned start</p>
+                </div>
+              </div>
+              <div class="pose-map-frame">
+                <canvas id="pure-vo-map" width="600" height="500"></canvas>
+                <canvas id="pure-vo-global-map" class="pose-global-map" width="240" height="180"></canvas>
+              </div>
+              <div class="pose-values">
+                <div><span>North</span><strong id="pure-vo-north">—</strong></div>
+                <div><span>East</span><strong id="pure-vo-east">—</strong></div>
+                <div><span>Down</span><strong id="pure-vo-down">—</strong></div>
+                <div><span>Yaw</span><strong id="pure-vo-yaw">—</strong></div>
+              </div>
+            </article>
+
+            <article class="pose-card card pure-radar-card">
+              <div class="pose-title">
+                <span class="color-dot pure-radar-dot"></span>
+                <div>
+                  <h3>Pure Radar Odometry</h3>
+                  <p>GT-aligned start</p>
+                </div>
+              </div>
+              <div class="pose-map-frame">
+                <canvas id="pure-radar-map" width="600" height="500"></canvas>
+                <canvas id="pure-radar-global-map" class="pose-global-map" width="240" height="180"></canvas>
+              </div>
+              <div class="pose-values">
+                <div><span>North</span><strong id="pure-radar-north">—</strong></div>
+                <div><span>East</span><strong id="pure-radar-east">—</strong></div>
+                <div><span>Down</span><strong id="pure-radar-down">—</strong></div>
+                <div><span>Yaw</span><strong id="pure-radar-yaw">—</strong></div>
+              </div>
+            </article>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <div class="legend-line">
+          <span>NED world frame</span>
+          <span class="separator">·</span>
+          <span>All local maps use the same scale</span>
+          <span class="separator">·</span>
+          <span>Press Space to pause · R to restart</span>
+        </div>
+        <div id="status" class="status">Loading pose data…</div>
+      </footer>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

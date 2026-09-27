@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Radar Localization · Pose Comparison</title>
+    <link rel="stylesheet" href="dashboard.css" />
+  </head>
+  <body data-layout="compare">
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+            <circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="1.4" />
+            <circle cx="16" cy="16" r="8" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.55" />
+            <path d="M16 16 L27 11" stroke="currentColor" stroke-width="1.6" />
+            <circle cx="16" cy="16" r="2.2" fill="currentColor" />
+          </svg>
+          <div>
+            <p class="eyebrow">Radar Localization · Synthetic Demo</p>
+            <h1>全局位姿估计对比</h1>
+          </div>
+        </div>
+
+        <nav class="layout-switch" aria-label="可视化布局">
+          <button type="button" class="layout-btn is-active" data-layout="compare">对比</button>
+          <button type="button" class="layout-btn" data-layout="overlay">叠加</button>
+          <button type="button" class="layout-btn" data-layout="analysis">误差分析</button>
+          <button type="button" class="layout-btn" data-layout="focus">单方法</button>
+        </nav>
+
+        <div class="top-meta">
+          <span class="pill">240 帧片段</span>
+          <span class="pill" data-bind="sequence">—</span>
+          <span class="pill">NED · N↑ E→</span>
+          <span class="pill" data-bind="span-label">Local 100 m</span>
+        </div>
+      </header>
+
+      <section class="transport" aria-label="Playback">
+        <div class="transport-buttons">
+          <button type="button" id="btn-restart" title="Restart (R)">⏮</button>
+          <button type="button" id="btn-prev" title="Previous frame">◀</button>
+          <button type="button" id="btn-play" class="play" title="Pause (Space)">暂停</button>
+          <button type="button" id="btn-next" title="Next frame">▶</button>
+        </div>
+        <div class="speed-group" role="group" aria-label="Playback speed">
+          <button type="button" class="speed-btn" data-speed="0.25">0.25×</button>
+          <button type="button" class="speed-btn" data-speed="0.5">0.5×</button>
+          <button type="button" class="speed-btn is-active" data-speed="1">1×</button>
+          <button type="button" class="speed-btn" data-speed="2">2×</button>
+          <button type="button" class="speed-btn" data-speed="4">4×</button>
+        </div>
+        <input id="frame-slider" type="range" min="0" max="0" value="0" />
+        <div class="clock">
+          <strong data-bind="frame-label">Frame —</strong>
+          <span data-bind="timestamp-label">Timestamp —</span>
+        </div>
+        <div id="status" class="status">Loading pose data…</div>
+      </section>
+
+      <main>
+        <!-- ================= COMPARE ================= -->
+        <section id="layout-compare" class="layout" aria-label="Method comparison">
+          <div class="sensor-row">
+            <article class="card sensor-card">
+              <div class="card-label">
+                <span>Stereo Centre</span>
+                <em>Forward RGB</em>
+              </div>
+              <div class="media">
+                <img class="js-stereo" alt="Stereo centre RGB frame" />
+              </div>
+            </article>
+            <article class="card sensor-card radar-card">
+              <div class="card-label">
+                <span class="step">1</span>
+                <span>Radar BEV Input</span>
+              </div>
+              <div class="media radar-media">
+                <img class="js-radar" alt="Radar bird's-eye-view frame" />
+                <div class="radar-scan" aria-hidden="true"></div>
+                <div class="sensor-mark" aria-hidden="true"></div>
+              </div>
+            </article>
+            <article class="card pose-card gt-card" data-method="gt">
+              <div class="pose-head">
+                <span class="swatch"></span>
+                <div>
+                  <h3>Ground Truth</h3>
+                  <p>Reference pose</p>
+                </div>
+                <span class="ref-badge">REF</span>
+              </div>
+              <div class="map-frame">
+                <canvas id="gt-map" width="600" height="500"></canvas>
+                <canvas id="gt-global-map" class="pip" width="240" height="180"></canvas>
+              </div>
+              <div class="metrics">
+                <div><span>North</span><strong data-bind="gt-north">—</strong></div>
+                <div><span>East</span><strong data-bind="gt-east">—</strong></div>
+                <div><span>Down</span><strong data-bind="gt-down">—</strong></div>
+                <div><span>Yaw</span><strong data-bind="gt-yaw">—</strong></div>
+              </div>
+            </article>
+          </div>
+
+          <div class="compare-head">
+            <span class="step">2</span>
+            <h2>Global Pose Comparison</h2>
+            <p>各方法局部地图使用同一尺度 · 点击卡片进入单方法视图</p>
+          </div>
+
+          <div class="method-grid">
+            <article class="card pose-card" data-method="pure-vo" data-focus="pure-vo">
+              <div class="pose-head">
+                <span class="swatch"></span>
+                <div>
+                  <h3>Pure VO</h3>
+                  <p>GT-aligned start</p>
+                </div>
+                <div class="error-chip" data-bind="pure-vo-err">—</div>
+              </div>
+              <div class="map-frame">
+                <canvas id="pure-vo-map" width="600" height="500"></canvas>
+                <canvas id="pure-vo-global-map" class="pip" width="240" height="180"></canvas>
+              </div>
+              <div class="metrics">
+                <div><span>North</span><strong data-bind="pure-vo-north">—</strong></div>
+                <div><span>East</span><strong data-bind="pure-vo-east">—</strong></div>
+                <div><span>Down</span><strong data-bind="pure-vo-down">—</strong></div>
+                <div><span>Yaw</span><strong data-bind="pure-vo-yaw">—</strong></div>
+              </div>
+            </article>
+
+            <article class="card pose-card" data-method="pure-radar" data-focus="pure-radar">
+              <div class="pose-head">
+                <span class="swatch"></span>
+                <div>
+                  <h3>Pure Radar Odometry</h3>
+                  <p>GT-aligned start</p>
+                </div>
+                <div class="error-chip" data-bind="pure-radar-err">—</div>
+              </div>
+              <div class="map-frame">
+                <canvas id="pure-radar-map" width="600" height="500"></canvas>
+                <canvas id="pure-radar-global-map" class="pip" width="240" height="180"></canvas>
+              </div>
+              <div class="metrics">
+                <div><span>North</span><strong data-bind="pure-radar-north">—</strong></div>
+                <div><span>East</span><strong data-bind="pure-radar-east">—</strong></div>
+                <div><span>Down</span><strong data-bind="pure-radar-down">—</strong></div>
+                <div><span>Yaw</span><strong data-bind="pure-radar-yaw">—</strong></div>
+              </div>
+            </article>
+
+            <article class="card pose-card" data-method="single-frame" data-focus="single-frame">
+              <div class="pose-head">
+                <span class="swatch"></span>
+                <div>
+                  <h3>Single Frame Model</h3>
+                  <p>V86 · no temporal constraint</p>
+                </div>
+                <div class="error-chip" data-bind="single-frame-err">—</div>
+              </div>
+              <div class="map-frame">
+                <canvas id="single-frame-map" width="600" height="500"></canvas>
+                <canvas id="single-frame-global-map" class="pip" width="240" height="180"></canvas>
+              </div>
+              <div class="metrics">
+                <div><span>North</span><strong data-bind="single-frame-north">—</strong></div>
+                <div><span>East</span><strong data-bind="single-frame-east">—</strong></div>
+                <div><span>Down</span><strong data-bind="single-frame-down">—</strong></div>
+                <div><span>Yaw</span><strong data-bind="single-frame-yaw">—</strong></div>
+              </div>
+            </article>
+
+            <article class="card pose-card" data-method="temporal" data-focus="temporal">
+              <div class="pose-head">
+                <span class="swatch"></span>
+                <div>
+                  <h3>Temporal Model</h3>
+                  <p>V113</p>
+                </div>
+                <div class="error-chip" data-bind="temporal-err">—</div>
+              </div>
+              <div class="map-frame">
+                <canvas id="temporal-map" width="600" height="500"></canvas>
+                <canvas id="temporal-global-map" class="pip" width="240" height="180"></canvas>
+              </div>
+              <div class="metrics">
+                <div><span>North</span><strong data-bind="temporal-north">—</strong></div>
+                <div><span>East</span><strong data-bind="temporal-east">—</strong></div>
+                <div><span>Down</span><strong data-bind="temporal-down">—</strong></div>
+                <div><span>Yaw</span><strong data-bind="temporal-yaw">—</strong></div>
+              </div>
+            </article>
+
+            <article class="card pose-card" data-method="vo-primary" data-focus="vo-primary">
+              <div class="pose-head">
+                <span class="swatch"></span>
+                <div>
+                  <h3>VO + Model</h3>
+                  <p>V118 · tuned VO-primary</p>
+                </div>
+                <span class="state-badge" data-bind="vo-primary-state">VO</span>
+                <div class="error-chip" data-bind="vo-primary-err">—</div>
+              </div>
+              <div class="map-frame">
+                <canvas id="vo-primary-map" width="600" height="500"></canvas>
+                <canvas id="vo-primary-global-map" class="pip" width="240" height="180"></canvas>
+              </div>
+              <div class="metrics">
+                <div><span>North</span><strong data-bind="vo-primary-north">—</strong></div>
+                <div><span>East</span><strong data-bind="vo-primary-east">—</strong></div>
+                <div><span>Down</span><strong data-bind="vo-primary-down">—</strong></div>
+                <div><span>Yaw</span><strong data-bind="vo-primary-yaw">—</strong></div>
+              </div>
+            </article>
+
+            <article class="card pose-card" data-method="radar-primary" data-focus="radar-primary">
+              <div class="pose-head">
+                <span class="swatch"></span>
+                <div>
+                  <h3>CFEAR-lite + Model</h3>
+                  <p>Radar-primary fusion</p>
+                </div>
+                <div class="error-chip" data-bind="radar-primary-err">—</div>
+              </div>
+              <div class="map-frame">
+                <canvas id="radar-primary-map" width="600" height="500"></canvas>
+                <canvas id="radar-primary-global-map" class="pip" width="240" height="180"></canvas>
+              </div>
+              <div class="metrics">
+                <div><span>North</span><strong data-bind="radar-primary-north">—</strong></div>
+                <div><span>East</span><strong data-bind="radar-primary-east">—</strong></div>
+                <div><span>Down</span><strong data-bind="radar-primary-down">—</strong></div>
+                <div><span>Yaw</span><strong data-bind="radar-primary-yaw">—</strong></div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- ================= OVERLAY ================= -->
+        <section id="layout-overlay" class="layout" aria-label="Trajectory overlay">
+          <article class="card overlay-stage">
+            <div class="card-label overlay-label">
+              <span>All methods · local window</span>
+              <em>GT 青色参考轨迹 · 点击右侧方法开关显示</em>
+            </div>
+            <div class="map-frame fill">
+              <canvas id="overlay-map" width="1400" height="1000"></canvas>
+            </div>
+          </article>
+          <aside class="overlay-side">
+            <article class="card sensor-card compact">
+              <div class="card-label"><span>Stereo</span></div>
+              <div class="media"><img class="js-stereo" alt="Stereo centre RGB frame" /></div>
+            </article>
+            <article class="card sensor-card compact radar-card">
+              <div class="card-label"><span>Radar BEV</span></div>
+              <div class="media radar-media">
+                <img class="js-radar" alt="Radar bird's-eye-view frame" />
+                <div class="sensor-mark" aria-hidden="true"></div>
+              </div>
+            </article>
+            <article class="card legend-card">
+              <div class="card-label">
+                <span>方法开关</span>
+                <em>点击切换 · Shift+点击只看该项</em>
+              </div>
+              <div id="overlay-legend" class="legend-list"></div>
+            </article>
+            <article class="card pip-card">
+              <div class="card-label"><span>Global</span></div>
+              <div class="map-frame">
+                <canvas id="overlay-global-map" width="360" height="270"></canvas>
+              </div>
+            </article>
+          </aside>
+        </section>
+
+        <!-- ================= ANALYSIS ================= -->
+        <section id="layout-analysis" class="layout" aria-label="Error analysis">
+          <article class="card chart-card">
+            <div class="card-label">
+              <span>平面位置误差</span>
+              <em>hypot(ΔN, ΔE) · 点击曲线跳转到对应帧</em>
+            </div>
+            <canvas id="error-pos-chart" width="1400" height="380"></canvas>
+            <div id="pos-tooltip" class="chart-tip" hidden></div>
+          </article>
+          <article class="card chart-card">
+            <div class="card-label">
+              <span>航向误差</span>
+              <em>|wrap(Δyaw)| · 度</em>
+            </div>
+            <canvas id="error-yaw-chart" width="1400" height="380"></canvas>
+            <div id="yaw-tooltip" class="chart-tip" hidden></div>
+          </article>
+          <article class="card table-card">
+            <div class="card-label">
+              <span>全序列统计</span>
+              <em>按平面 RMSE 升序</em>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>方法</th>
+                    <th>RMSE</th>
+                    <th>Mean</th>
+                    <th>Max</th>
+                    <th>Yaw RMSE</th>
+                    <th>当前</th>
+                  </tr>
+                </thead>
+                <tbody id="stats-body"></tbody>
+              </table>
+            </div>
+          </article>
+          <article class="card bar-card">
+            <div class="card-label">
+              <span>当前帧误差</span>
+              <em>平面位置</em>
+            </div>
+            <canvas id="error-bar-chart" width="720" height="380"></canvas>
+          </article>
+        </section>
+
+        <!-- ================= FOCUS ================= -->
+        <section id="layout-focus" class="layout" aria-label="Single method focus">
+          <div class="focus-tabs" id="focus-tabs"></div>
+          <article class="card sensor-card">
+            <div class="card-label"><span>Stereo Centre</span></div>
+            <div class="media"><img class="js-stereo" alt="Stereo centre RGB frame" /></div>
+          </article>
+          <article class="card sensor-card radar-card">
+            <div class="card-label"><span>Radar BEV Input</span></div>
+            <div class="media radar-media">
+              <img class="js-radar" alt="Radar bird's-eye-view frame" />
+              <div class="radar-scan" aria-hidden="true"></div>
+              <div class="sensor-mark" aria-hidden="true"></div>
+            </div>
+          </article>
+          <article class="card focus-map-card">
+            <div class="card-label">
+              <span data-bind="focus-title">CFEAR-lite + Model vs Ground Truth</span>
+              <em>青色为 GT，彩色为所选方法</em>
+            </div>
+            <div class="map-frame fill">
+              <canvas id="focus-map" width="1100" height="820"></canvas>
+              <canvas id="focus-global-map" class="pip" width="280" height="210"></canvas>
+            </div>
+          </article>
+          <aside class="focus-side">
+            <article class="card">
+              <div class="card-label"><span>当前位姿</span></div>
+              <div class="compare-values">
+                <div class="kv-head"><span></span><span>GT</span><span id="focus-method-name">Method</span></div>
+                <div class="kv-row"><span>North</span><strong data-bind="gt-north">—</strong><strong data-bind="focus-north">—</strong></div>
+                <div class="kv-row"><span>East</span><strong data-bind="gt-east">—</strong><strong data-bind="focus-east">—</strong></div>
+                <div class="kv-row"><span>Down</span><strong data-bind="gt-down">—</strong><strong data-bind="focus-down">—</strong></div>
+                <div class="kv-row"><span>Yaw</span><strong data-bind="gt-yaw">—</strong><strong data-bind="focus-yaw">—</strong></div>
+              </div>
+            </article>
+            <article class="card gauges">
+              <div class="gauge">
+                <span>Δxy</span>
+                <strong data-bind="focus-err-pos">—</strong>
+              </div>
+              <div class="gauge">
+                <span>Δyaw</span>
+                <strong data-bind="focus-err-yaw">—</strong>
+              </div>
+              <div class="gauge">
+                <span>RMSE</span>
+                <strong data-bind="focus-rmse">—</strong>
+              </div>
+              <div class="gauge">
+                <span>Max</span>
+                <strong data-bind="focus-max">—</strong>
+              </div>
+            </article>
+            <article class="card chart-card compact">
+              <div class="card-label"><span>该序列误差曲线</span></div>
+              <canvas id="focus-error-chart" width="520" height="180"></canvas>
+            </article>
+          </aside>
+        </section>
+      </main>
+
+      <footer>
+        <div class="keys">
+          <span><kbd>Space</kbd> 暂停</span>
+          <span><kbd>R</kbd> 重播</span>
+          <span><kbd>←</kbd><kbd>→</kbd> 逐帧</span>
+          <span><kbd>1</kbd>–<kbd>4</kbd> 切换布局</span>
+          <span><kbd>[</kbd><kbd>]</kbd> 变速</span>
+        </div>
+        <a class="legacy" href="index-global.html">全局轨迹版</a>
+        <a class="legacy" href="indexbak.html">原版布局</a>
+      </footer>
+    </div>
+
+    <div id="boot" class="boot">
+      <div class="boot-card">
+        <p id="boot-text">Loading pose data…</p>
+        <div class="boot-bar"><span></span></div>
+      </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="dashboard.js"></script>
+  </body>
+</html>
