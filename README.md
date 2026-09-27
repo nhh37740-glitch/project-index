@@ -32,4 +32,4 @@ docker run --rm --read-only --tmpfs /tmp:size=16m --cap-drop ALL --security-opt 
 
 ## 部署
 
-在服务器上配置 Docker 与 Jenkins 后，运行 `bash deploy/install-nginx-route.sh` 一次。Jenkins job 指向本仓库服务器副本，以 `DEPLOY=true` 参数构建并发布。部署命令只替换 `project-index` 容器；不会修改 Media Workspace 的服务或发布目录。
+在服务器上配置 Docker 与 Jenkins 后，运行 `bash deploy/install-nginx-route.sh` 和 `bash deploy/install-jenkins-job.sh` 各一次。Jenkins job 指向本仓库服务器副本，以 `DEPLOY=true` 参数构建并发布。部署命令只替换 `project-index` 容器；不会修改 Media Workspace 的服务或发布目录。
