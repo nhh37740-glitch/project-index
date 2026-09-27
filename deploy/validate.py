@@ -20,5 +20,7 @@ assert (root / "styles.css").is_file() and (root / "favicon.svg").is_file()
 links = Links()
 links.feed(html)
 assert len(links.urls) >= 8, "missing project entrances"
-assert "./radar/" in links.urls and "/" in links.urls
+assert "/" in links.urls
+assert "./radar/" not in links.urls, "unverified dataset demo must not be published"
+assert "演示准备中" in html
 print(f"validated {len(links.urls)} links and local assets")
