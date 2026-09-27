@@ -1,5 +1,4 @@
 from html.parser import HTMLParser
-import json
 from pathlib import Path
 
 
@@ -22,16 +21,35 @@ links = Links()
 links.feed(html)
 assert len(links.urls) >= 8, "missing project entrances"
 assert "/" in links.urls
-assert "./radar/indexbak.html" in links.urls, "synthetic radar demo entry is missing"
+assert "./radar/indexbak.html" not in links.urls, "Radar demo must stay closed pending source/license clearance"
+assert "./apps/go/" in links.urls, "Go live demo entry is missing"
+assert "./apps/java/agent.html" in links.urls, "Java live demo entry is missing"
+assert "./apps/cpp/" in links.urls, "C++ status dashboard entry is missing"
+assert "模型未配置" in html and "暂无帧数据" in html and "不运行推理" in html, \
+    "C++ entry must disclose that this is an idle panel without model inference"
+assert "推理可用" not in html and "在线推理" not in html, \
+    "C++ must not be advertised as an inference demo"
+routes = (root / "deploy" / "project-apps-route.conf").read_text(encoding="utf-8")
+for required_route in (
+    "location ^~ /projects/apps/go/",
+    "proxy_pass http://127.0.0.1:18101/;",
+    "location ^~ /projects/apps/java/",
+    "proxy_pass http://127.0.0.1:18102/;",
+    "location ^~ /projects/apps/cpp/",
+    "proxy_pass http://127.0.0.1:18103/;",
+    "/projects/apps/go/api/",
+    "/projects/apps/cpp/api/state",
+    "/projects/apps/cpp/frame/",
+):
+    assert required_route in routes, f"missing project app proxy route: {required_route}"
 radar = root / "radar"
-data_script = (radar / "data" / "method_comparison_jan15_cfear_lite_pose_data.js").read_text(encoding="utf-8")
-prefix = "window.RADAR_POSE_METHOD_DATA="
-assert data_script.startswith(prefix)
-pose_data = json.loads(data_script[len(prefix):].strip().removesuffix(";"))
-assert pose_data["metadata"]["synthetic"] is True
-assert len(pose_data["frames"]) == 240
-assert (radar / "assets" / "radar").is_dir() and len(list((radar / "assets" / "radar").glob("*.jpg"))) == 240
-assert (radar / "assets" / "stereo").is_dir() and len(list((radar / "assets" / "stereo").glob("*.jpg"))) == 240
-for page in ("indexbak.html", "index.html", "index-global.html"):
-    assert "synthetic" in (radar / page).read_text(encoding="utf-8").lower(), f"{page} must label synthetic data"
-print(f"validated {len(links.urls)} links and local assets")
+expected_radar_files = {"indexbak.html", "index.html", "index-global.html"}
+assert {path.name for path in radar.iterdir()} == expected_radar_files, "only pending notice pages may be served"
+assert not list(radar.rglob("*.jpg")), "sensor frames must not be included before clearance"
+assert not list(radar.rglob("*.js")), "pose data or demo scripts must not be included before clearance"
+for page in expected_radar_files:
+    text = (radar / page).read_text(encoding="utf-8").lower()
+    assert "真实数据演示暂缓开放" in text, f"{page} must show the pending notice"
+    assert "不提供数据预览或下载" in text, f"{page} must not imply preview availability"
+    assert "synthetic demo data" not in text
+print(f"validated {len(links.urls)} project links and Radar containment")

@@ -15,8 +15,8 @@ pipeline {
           port=$(sudo docker port "$cid" 8080/tcp | sed -n 's/.*://p')
           for i in 1 2 3 4 5; do
             if curl -fsS "http://127.0.0.1:$port/" >/dev/null \
-                && curl -fsS "http://127.0.0.1:$port/radar/indexbak.html" | grep -qi 'synthetic demo data' \
-                && curl -fsS "http://127.0.0.1:$port/radar/data/method_comparison_jan15_cfear_lite_pose_data.js" | grep -q '"synthetic":true'; then
+                && curl -fsS "http://127.0.0.1:$port/radar/indexbak.html" | grep -q '真实数据演示暂缓开放' \
+                && ! curl -fsS "http://127.0.0.1:$port/radar/data/method_comparison_jan15_cfear_lite_pose_data.js" >/dev/null; then
               exit 0
             fi
             sleep 1
@@ -26,11 +26,56 @@ pipeline {
     }
     stage('Deploy') {
       when { expression { params.DEPLOY } }
-      steps { sh 'bash deploy/deploy.sh project-index:${BUILD_NUMBER}' }
+      steps {
+        sh '''set -eu
+          bash deploy/install-nginx-route.sh
+          bash deploy/deploy.sh project-index:${BUILD_NUMBER}
+        '''
+      }
     }
     stage('Public smoke') {
       when { expression { params.DEPLOY } }
-      steps { sh 'curl -fsS http://127.0.0.1:8088/projects/ | grep -q "PROJECT INDEX"' }
+      steps {
+        sh '''set -eu
+          site="$(curl -fsS http://127.0.0.1:8088/projects/)"
+          printf '%s' "$site" | grep -q 'PROJECT INDEX'
+          printf '%s' "$site" | grep -q 'href="./apps/go/"'
+          printf '%s' "$site" | grep -q 'href="./apps/java/agent.html"'
+          printf '%s' "$site" | grep -q 'href="./apps/cpp/"'
+          printf '%s' "$site" | grep -q '模型未配置'
+          printf '%s' "$site" | grep -q '不运行推理'
+          if printf '%s' "$site" | grep -Eq '推理可用|在线推理'; then
+            echo 'C++ must not be advertised as an available inference demo' >&2
+            exit 1
+          fi
+
+          go_page="$(curl -fsS http://127.0.0.1:8088/projects/apps/go/)"
+          printf '%s' "$go_page" | grep -q 'projects/apps/go/api/'
+          java_page="$(curl -fsS http://127.0.0.1:8088/projects/apps/java/agent.html)"
+          printf '%s' "$java_page" | grep -Fq "new URL('api', window.location.href)"
+          if printf '%s' "$java_page" | grep -Eiq 'https?://localhost(:[0-9]+)?/api'; then
+            echo 'Java demo still contains a browser-facing localhost API URL' >&2
+            exit 1
+          fi
+
+          if ! java_api_status="$(curl -sS -o /dev/null -w '%{http_code}' \
+              http://127.0.0.1:8088/projects/apps/java/api/chat 2>/dev/null)"; then
+            echo 'Java API proxy could not connect to its upstream' >&2
+            exit 1
+          fi
+          case "$java_api_status" in
+            000|404|502)
+              echo "Java API proxy did not reach its upstream (HTTP $java_api_status)" >&2
+              exit 1
+              ;;
+          esac
+
+          cpp_page="$(curl -fsS http://127.0.0.1:8088/projects/apps/cpp/)"
+          printf '%s' "$cpp_page" | grep -q 'projects/apps/cpp/api/state'
+          cpp_state="$(curl -fsS http://127.0.0.1:8088/projects/apps/cpp/api/state)"
+          printf '%s' "$cpp_state" | python3 -c 'import json,sys; s=json.load(sys.stdin); assert s.get("run_state") == "waiting_config", s; assert s.get("events") == [], s; assert "未运行推理" in s.get("run_detail", ""), s'
+        '''
+      }
     }
   }
   post { always { echo "project-index build ${env.BUILD_NUMBER}: ${currentBuild.currentResult}" } }

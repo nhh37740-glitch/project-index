@@ -12,11 +12,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 ROOT = Path(__file__).resolve().parents[1]
 FILES = ["index.html", "styles.css", "favicon.svg"]
-FILES.extend(
-    path.relative_to(ROOT).as_posix()
-    for path in sorted((ROOT / "radar").rglob("*"))
-    if path.is_file()
-)
+FILES.extend(f"radar/{name}" for name in ("indexbak.html", "index.html", "index-global.html"))
 
 
 def git(*args: str) -> str:
@@ -47,6 +43,10 @@ checksum_lines.append(f"{sha256(manifest_bytes).hexdigest()}  manifest.json")
 checksum_bytes = ("\n".join(checksum_lines) + "\n").encode("ascii")
 out = ROOT / "dist"
 out.mkdir(exist_ok=True)
+for stale in out.glob("project-index-*.zip"):
+    if stale.resolve().parent != out.resolve():
+        raise SystemExit(f"Unexpected archive path: {stale}")
+    stale.unlink()
 archive = out / f"project-index-{version}-{commit[:7]}.zip"
 with ZipFile(archive, "w", compression=ZIP_DEFLATED) as zip_file:
     for name in FILES:
