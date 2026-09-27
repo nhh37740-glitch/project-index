@@ -13,7 +13,14 @@ pipeline {
           cid=$(sudo docker run -d --rm --read-only --tmpfs /tmp:size=16m --cap-drop ALL --security-opt no-new-privileges --memory 64m --cpus 0.25 -p 127.0.0.1::8080 project-index:${BUILD_NUMBER})
           trap 'sudo docker stop "$cid" >/dev/null 2>&1 || true' EXIT
           port=$(sudo docker port "$cid" 8080/tcp | sed -n 's/.*://p')
-          for i in 1 2 3 4 5; do curl -fsS "http://127.0.0.1:$port/" >/dev/null && exit 0; sleep 1; done
+          for i in 1 2 3 4 5; do
+            if curl -fsS "http://127.0.0.1:$port/" >/dev/null \
+                && curl -fsS "http://127.0.0.1:$port/radar/indexbak.html" | grep -qi 'synthetic demo data' \
+                && curl -fsS "http://127.0.0.1:$port/radar/data/method_comparison_jan15_cfear_lite_pose_data.js" | grep -q '"synthetic":true'; then
+              exit 0
+            fi
+            sleep 1
+          done
           sudo docker logs "$cid"; exit 1'''
       }
     }
