@@ -15,6 +15,11 @@ FILES = ["index.html", "styles.css", "favicon.svg"]
 FILES.extend(f"radar/{name}" for name in ("indexbak.html", "index.html", "index-global.html"))
 
 
+def canonical_text(path: Path) -> bytes:
+    """Return UTF-8 text with LF endings for reproducible cross-platform ZIPs."""
+    return path.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+
+
 def git(*args: str) -> str:
     result = subprocess.run(["git", *args], cwd=ROOT, text=True, capture_output=True, check=False)
     return result.stdout.strip() if result.returncode == 0 else ""
@@ -27,7 +32,8 @@ commit = git("rev-parse", "HEAD") or "uncommitted"
 tree_state = "uncommitted" if commit == "uncommitted" else (
     "dirty" if git("status", "--porcelain", "--untracked-files=no") else "clean"
 )
-checksums = {name: sha256((ROOT / name).read_bytes()).hexdigest() for name in FILES}
+file_contents = {name: canonical_text(ROOT / name) for name in FILES}
+checksums = {name: sha256(content).hexdigest() for name, content in file_contents.items()}
 manifest = {
     "name": "project-index",
     "version": version,
@@ -50,7 +56,7 @@ for stale in out.glob("project-index-*.zip"):
 archive = out / f"project-index-{version}-{commit[:7]}.zip"
 with ZipFile(archive, "w", compression=ZIP_DEFLATED) as zip_file:
     for name in FILES:
-        zip_file.write(ROOT / name, name)
+        zip_file.writestr(name, file_contents[name])
     zip_file.writestr("manifest.json", manifest_bytes)
     zip_file.writestr("SHA256SUMS", checksum_bytes)
 print(archive)
