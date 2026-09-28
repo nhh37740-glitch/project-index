@@ -4,7 +4,7 @@ pipeline {
   options { timeout(time: 30, unit: 'MINUTES'); disableConcurrentBuilds(); timestamps(); buildDiscarder(logRotator(numToKeepStr: '20')) }
   stages {
     stage('Checkout') { steps { checkout scm } }
-    stage('Validate') { steps { sh 'python3 deploy/validate.py'; sh 'node worker/verify.mjs' } }
+    stage('Validate') { steps { sh 'python3 deploy/validate.py'; sh 'node worker/verify.mjs'; sh 'bash -n worker/publish-public.sh worker/publish-private.sh' } }
     stage('Package') { steps { sh 'python3 deploy/package.py'; archiveArtifacts artifacts: 'dist/*.zip', fingerprint: true } }
     stage('Build image') { steps { sh 'sudo docker build --tag project-index:${BUILD_NUMBER} .' } }
     stage('Smoke image') {
