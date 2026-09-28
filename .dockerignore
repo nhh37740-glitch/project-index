@@ -3,4 +3,5 @@
 README.md
 Jenkinsfile
 deploy/
+resume-gateway/
 *.log

@@ -1,0 +1,6 @@
+__pycache__/
+tests/
+README.md
+run-container.sh
+*.pdf
+*.sha256
