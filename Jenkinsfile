@@ -52,7 +52,7 @@ pipeline {
           fi
           resume_page="$(curl -fsS http://127.0.0.1:8088/projects/resume.html)"
           printf '%s' "$resume_page" | grep -q '脱敏'
-          if printf '%s' "$resume_page" | grep -Eq 'https?://[^ ]*#resume=|\.pdf'; then
+          if printf '%s' "$resume_page" | grep -Eq 'https?://[^ ]*#resume=|[.]pdf'; then
             echo 'Private resume must not be published in the static site' >&2
             exit 1
           fi
