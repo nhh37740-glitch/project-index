@@ -14,8 +14,7 @@ if sudo docker container inspect "$name" >/dev/null 2>&1; then sudo docker rm -f
 if ! sudo docker run "${args[@]}" "$image" >/dev/null; then rollback; exit 1; fi
 ready=false
 for attempt in $(seq 1 15); do
-  if curl -fsS http://127.0.0.1:8092/ >/dev/null \
-      && curl -fsS http://127.0.0.1:8092/radar/indexbak.html | grep -q '真实数据演示暂缓开放'; then
+  if curl -fsS http://127.0.0.1:8092/ >/dev/null; then
     ready=true
     break
   fi

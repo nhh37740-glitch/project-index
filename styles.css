@@ -5,3 +5,5 @@
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.text-link span,.card-link span,.project-card{transition:none}}
 @media(max-width:900px){.intro{min-height:0;grid-template-columns:minmax(0,1fr) 180px}.intro-copy{padding:2rem 1.5rem 2rem 0}.intro h1{font-size:clamp(2.8rem,5vw,3.6rem);margin-bottom:.9rem}.eyebrow{margin-bottom:1rem}.intro-description{line-height:1.55;margin-bottom:1rem}.intro-graphic{min-height:0;border-top:0;border-left:1px solid var(--line)}.projects{padding-top:2.5rem}.section-heading{margin-bottom:1.25rem}}
 @media(max-width:640px){.intro{grid-template-columns:1fr}.intro-copy{padding:2rem 0 2.2rem}.intro h1{font-size:clamp(2.6rem,9vw,3.5rem)}.intro-graphic{display:none}}
+/* A recorded replay is available, but no live inference is running. */
+.state-recorded{color:#86c9c0}

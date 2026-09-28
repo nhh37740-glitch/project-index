@@ -12,7 +12,6 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 ROOT = Path(__file__).resolve().parents[1]
 FILES = ["index.html", "styles.css", "favicon.svg"]
-FILES.extend(f"radar/{name}" for name in ("indexbak.html", "index.html", "index-global.html"))
 
 
 def canonical_text(path: Path) -> bytes:

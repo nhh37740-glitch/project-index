@@ -1,6 +1,6 @@
 # Project Index
 
-个人项目展示主页。静态页面在 `/projects/` 提供访问；现有 Media Workspace 保留在 `/`。Radar Pose Demo 当前关闭预览，等待真实数据来源与许可证核查；发布包不包含雷达演示帧、位姿数据或演示脚本。
+个人项目展示主页。静态页面在 `/projects/` 提供访问；现有 Media Workspace 保留在 `/`。Radar Pose Demo 是独立的 Docker/Jenkins 模块，经 `/projects/radar/` 访问；主页不复制雷达帧、位姿数据或演示脚本。
 
 ## 本地查看
 
@@ -8,7 +8,7 @@
 python -m http.server 8000
 ```
 
-打开 `http://127.0.0.1:8000/`。Radar Pose Demo 卡片只显示核查状态，不提供虚构预览。
+打开 `http://127.0.0.1:8000/`。主页卡片链接到独立 Radar 服务；该演示回放 Oxford RobotCar 的真实记录帧和已保存的位姿结果，不在浏览器里执行实时模型推理。
 
 ## 容器
 
@@ -18,7 +18,7 @@ docker run --rm --read-only --tmpfs /tmp:size=16m --cap-drop ALL --security-opt 
   --memory 64m --cpus 0.25 -p 127.0.0.1:8092:8080 project-index:local
 ```
 
-容器只监听宿主机回环地址，由现有 Nginx 的 `/projects/` 路由转发。主页镜像只包含 Radar 的待核查提示页，不包含任何预览数据。Jenkins 校验项目入口、待核查提示与演示素材缺席，再打包、构建容器镜像，部署后检查 HTTP 状态。
+容器只监听宿主机回环地址，由现有 Nginx 的 `/projects/` 路由转发。主页镜像只包含主页、样式和图标。Radar 自有 Jenkins 流水线负责真实回放页、配对图像、位姿摘录及独立 Docker 镜像；Nginx 将 `/projects/radar/` 转发到 Radar 模块的回环端口 `18104`。
 
 Go 和 Java 演示通过服务器现有 Nginx 入口转发到回环地址的服务端口，不向公网发布容器端口：
 
@@ -30,15 +30,17 @@ Go 和 Java 演示通过服务器现有 Nginx 入口转发到回环地址的服�
 
 `deploy/project-apps-route.conf` 将服务挂在同源路径下，并处理 Go 页面的根路径 API/SSE 请求与 C++ 面板的 API/帧 URL。运行 `bash deploy/install-nginx-route.sh` 会安装主页和演示服务路由、执行 `nginx -t`，然后 reload Nginx。Go 与 Java 页面会调用其真实后端；调用模型功能仍需各服务已有的 API key 配置。
 
+Radar 模块单独打包带版本的 ZIP、manifest 和 SHA-256，并在 Jenkins/Docker 中独立构建、校验和部署。素材来源、序列号、帧范围、Oxford RobotCar 署名与 CC BY-NC-SA 4.0 非商业学术用途说明见 Radar 演示页及其发布说明。
+
 C++ 容器默认运行 `--web-idle` 等待配置。状态 API 应返回 `waiting_config` 和空 `events`，页面明确提示尚未配置真实视频与模型，当前没有帧数据，也没有运行推理。这个入口只展示实际状态，不代表模型推理已部署或可用。
 
-`python3 deploy/package.py` 额外产出版本化静态 ZIP，其中包含主页、Radar 演示、`manifest.json` 与 `SHA256SUMS`；Jenkins 会归档并指纹化该交付物。
+`python3 deploy/package.py` 额外产出版本化静态 ZIP，其中包含主页、`manifest.json` 与 `SHA256SUMS`；Jenkins 会归档并指纹化该交付物。Radar 素材由 Radar 自己的版本化 ZIP 发布，不会重复装进主页包。
 
 ## 项目入口
 
 | 项目 | 入口 | 说明 |
 |---|---|---|
-| Radar Pose Demo | `/projects/radar/` | 来源与许可证核查提示；不提供数据预览 |
+| Radar Pose Demo | `/projects/radar/` | Oxford RobotCar 真实数据的记录回放；展示已保存估计，不运行浏览器推理 |
 | Media Workspace | `/` | 现有在线应用 |
 | CC Agent Go | `/projects/apps/go/` | 实时 WebAgent 页面；源码链接需 GitHub 权限 |
 | CC Agent Java | `/projects/apps/java/agent.html` | 实时 Agent 页面；源码链接需 GitHub 权限 |

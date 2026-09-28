@@ -15,8 +15,7 @@ pipeline {
           port=$(sudo docker port "$cid" 8080/tcp | sed -n 's/.*://p')
           for i in 1 2 3 4 5; do
             if curl -fsS "http://127.0.0.1:$port/" >/dev/null \
-                && curl -fsS "http://127.0.0.1:$port/radar/indexbak.html" | grep -q '真实数据演示暂缓开放' \
-                && ! curl -fsS "http://127.0.0.1:$port/radar/data/method_comparison_jan15_cfear_lite_pose_data.js" >/dev/null; then
+                && ! curl -fsS "http://127.0.0.1:$port/radar/" >/dev/null; then
               exit 0
             fi
             sleep 1
@@ -42,6 +41,9 @@ pipeline {
           printf '%s' "$site" | grep -q 'href="./apps/go/"'
           printf '%s' "$site" | grep -q 'href="./apps/java/agent.html"'
           printf '%s' "$site" | grep -q 'href="./apps/cpp/"'
+          printf '%s' "$site" | grep -q 'href="./radar/"'
+          printf '%s' "$site" | grep -q 'Oxford RobotCar'
+          printf '%s' "$site" | grep -q '不在浏览器中运行模型推理'
           printf '%s' "$site" | grep -q '模型未配置'
           printf '%s' "$site" | grep -q '不运行推理'
           if printf '%s' "$site" | grep -Eq '推理可用|在线推理'; then
@@ -74,6 +76,14 @@ pipeline {
           printf '%s' "$cpp_page" | grep -q 'projects/apps/cpp/api/state'
           cpp_state="$(curl -fsS http://127.0.0.1:8088/projects/apps/cpp/api/state)"
           printf '%s' "$cpp_state" | python3 -c 'import json,sys; s=json.load(sys.stdin); assert s.get("run_state") == "waiting_config", s; assert s.get("events") == [], s; assert "未运行推理" in s.get("run_detail", ""), s'
+
+          radar_page="$(curl -fsS http://127.0.0.1:8088/projects/radar/)"
+          printf '%s' "$radar_page" | grep -Fq '2019-01-15-13-06-37'
+          printf '%s' "$radar_page" | grep -Fq 'CC BY-NC-SA 4.0'
+          printf '%s' "$radar_page" | grep -Fq '不在浏览器中运行模型推理'
+          curl -fsS http://127.0.0.1:8088/projects/radar/app.js >/dev/null
+          curl -fsS http://127.0.0.1:8088/projects/radar/assets/radar/1547557604078984.jpg >/dev/null
+          curl -fsS http://127.0.0.1:8088/projects/radar/assets/stereo/1547557604081434.jpg >/dev/null
         '''
       }
     }
