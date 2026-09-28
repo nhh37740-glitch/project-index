@@ -6,10 +6,13 @@ const token = 'A'.repeat(43);
 const pdf = new TextEncoder().encode('%PDF-1.7\nprivate fixture\n');
 const entries = new Map([
   ['public:index.html', '<h1>public fixture</h1>'],
-  ['private:resume-pdf-base64', Buffer.from(pdf).toString('base64')],
+  ['private:resume-pdf', pdf.buffer],
 ]);
 const env = {
-  PORTFOLIO_KV: { get: async key => entries.get(key) ?? null },
+  PORTFOLIO_KV: { get: async (key, type) => {
+    if (key === 'private:resume-pdf') assert.equal(type, 'arrayBuffer');
+    return entries.get(key) ?? null;
+  } },
   RESUME_TOKEN_SHA256: createHash('sha256').update(token).digest('hex'),
 };
 const request = (path, authorization) => new Request(`https://portfolio.example/${path}`, {

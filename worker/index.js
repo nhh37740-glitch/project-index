@@ -9,11 +9,6 @@ const publicFiles = new Map([
   ['/favicon.svg', ['favicon.svg', 'image/svg+xml']],
 ]);
 
-function bytesFromBase64(encoded) {
-  const binary = atob(encoded);
-  return Uint8Array.from(binary, character => character.charCodeAt(0));
-}
-
 async function validToken(token, expectedHash) {
   if (!/^[A-Za-z0-9_-]{43}$/.test(token) || !/^[a-f0-9]{64}$/.test(expectedHash || '')) return false;
   const actual = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token)));
@@ -29,9 +24,9 @@ async function privateResume(request, env) {
   if (!match || !await validToken(match[1], env.RESUME_TOKEN_SHA256)) {
     return new Response('Not found', {status: 404, headers: {'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex'}});
   }
-  const encoded = await env.PORTFOLIO_KV.get('private:resume-pdf-base64');
-  if (!encoded) return new Response('Resume unavailable', {status: 503, headers: {'Cache-Control': 'private, no-store'}});
-  return new Response(bytesFromBase64(encoded), {headers: {
+  const pdf = await env.PORTFOLIO_KV.get('private:resume-pdf', 'arrayBuffer');
+  if (!pdf) return new Response('Resume unavailable', {status: 503, headers: {'Cache-Control': 'private, no-store'}});
+  return new Response(pdf, {headers: {
     'Content-Type': 'application/pdf',
     'Content-Disposition': 'inline; filename="resume.pdf"',
     'Cache-Control': 'private, no-store, max-age=0',
