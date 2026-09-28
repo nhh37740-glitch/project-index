@@ -19,8 +19,12 @@ On the Linux server, place the authoritative PDF and digest file outside the Git
 
 ```sh
 cd /path/to/project-index/resume-gateway
-sh ./run-container.sh /absolute/private/resume.pdf /absolute/private/resume-token.sha256
+install -d -m 700 /home/ubuntu/portfolio-private
+sh ./provision-private.sh /home/ubuntu/portfolio-private https://portfolio.72945645.xyz
+sh ./run-container.sh /home/ubuntu/portfolio-private/resume.pdf /home/ubuntu/portfolio-private/resume-token.sha256
 ```
+
+Provisioning refuses to overwrite an existing digest or link. It prints no token. Keep the generated `resume-link.txt` private; anyone holding the link can retrieve the full PDF after HTTPS is configured.
 
 `run-container.sh` builds only this module's image and starts a non-root container with a read-only root filesystem, dropped capabilities, restricted process/memory limits, two read-only file mounts, and `127.0.0.1:18105:8080` publishing. It does not remove or replace an existing container. Use `RESUME_GATEWAY_IMAGE`, `RESUME_GATEWAY_CONTAINER`, or `RESUME_GATEWAY_PORT` to override deployment names or host port. The public reverse proxy must terminate HTTPS and proxy `/api/resume` to the loopback port; do not directly publish the container on a public interface. Preserve the `Authorization` header and avoid logging it or the URL fragment.
 
