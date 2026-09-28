@@ -29,9 +29,9 @@ host_port=${RESUME_GATEWAY_PORT:-18105}
 case "$host_port" in *[!0-9]*|'') echo 'RESUME_GATEWAY_PORT must be numeric' >&2; exit 2 ;; esac
 
 if [ "${RESUME_GATEWAY_SKIP_BUILD:-0}" != 1 ]; then
-  docker build --tag "$image" "$script_dir"
+  sudo docker build --tag "$image" "$script_dir"
 fi
-docker run --detach \
+sudo docker run --detach \
   --name "$container" \
   --restart unless-stopped \
   --read-only \

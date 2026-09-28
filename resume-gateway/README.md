@@ -28,6 +28,8 @@ Provisioning refuses to overwrite an existing digest or link. It prints no token
 
 `run-container.sh` builds only this module's image and starts a non-root container with a read-only root filesystem, dropped capabilities, restricted process/memory limits, two read-only file mounts, and `127.0.0.1:18105:8080` publishing. It does not remove or replace an existing container. Use `RESUME_GATEWAY_IMAGE`, `RESUME_GATEWAY_CONTAINER`, or `RESUME_GATEWAY_PORT` to override deployment names or host port. The public reverse proxy must terminate HTTPS and proxy `/api/resume` to the loopback port; do not directly publish the container on a public interface. Preserve the `Authorization` header and avoid logging it or the URL fragment.
 
+Run the script as the non-root file owner with passwordless `sudo docker` access on the server. The container itself runs under that file owner's numeric UID and GID.
+
 To run the exact image that Jenkins has already built, set `RESUME_GATEWAY_IMAGE=portfolio-resume-gateway:<build-number>` and `RESUME_GATEWAY_SKIP_BUILD=1`; the script will only start that image.
 
 The designated link has the form `https://<public-host>/resume.html#resume=<token>`. The browser must remove the URL fragment from its address bar before making its same-origin `GET /api/resume` request with the Bearer header. The token must never be placed in a query string or in public HTML. The link grants access to anyone who possesses it; rotating the digest and restarting the container revokes the old link.
