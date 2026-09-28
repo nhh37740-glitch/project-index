@@ -1,0 +1,14 @@
+{
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "portfolio-home",
+  "main": "index.js",
+  "account_id": "647cb226d87f2d2ea782b14617378506",
+  "compatibility_date": "2026-09-28",
+  "workers_dev": false,
+  "kv_namespaces": [
+    { "binding": "PORTFOLIO_KV", "id": "dbd6554181574ed29f79716593f69e15" }
+  ],
+  "routes": [
+    { "pattern": "portfolio.72945645.xyz", "custom_domain": true }
+  ]
+}

@@ -37,17 +37,23 @@ pipeline {
       steps {
         sh '''set -eu
           site="$(curl -fsS http://127.0.0.1:8088/projects/)"
-          printf '%s' "$site" | grep -q 'PROJECT INDEX'
-          printf '%s' "$site" | grep -q 'href="./apps/go/"'
-          printf '%s' "$site" | grep -q 'href="./apps/java/agent.html"'
-          printf '%s' "$site" | grep -q 'href="./apps/cpp/"'
-          printf '%s' "$site" | grep -q 'href="./radar/"'
-          printf '%s' "$site" | grep -q 'Oxford RobotCar'
-          printf '%s' "$site" | grep -q '不在浏览器中运行模型推理'
-          printf '%s' "$site" | grep -q '模型未配置'
-          printf '%s' "$site" | grep -q '不运行推理'
-          if printf '%s' "$site" | grep -Eq '推理可用|在线推理'; then
+          printf '%s' "$site" | grep -q '项目展示'
+          printf '%s' "$site" | grep -q 'href="./repositories.html"'
+          printf '%s' "$site" | grep -q 'href="./resume.html"'
+          project_page="$(curl -fsS http://127.0.0.1:8088/projects/projects.html)"
+          printf '%s' "$project_page" | grep -q '7,203'
+          printf '%s' "$project_page" | grep -q 'Oxford RobotCar'
+          printf '%s' "$project_page" | grep -q '不在浏览器中运行模型推理'
+          printf '%s' "$project_page" | grep -q '模型未配置'
+          printf '%s' "$project_page" | grep -q '不运行推理'
+          if printf '%s' "$project_page" | grep -Eq '推理可用|在线推理'; then
             echo 'C++ must not be advertised as an available inference demo' >&2
+            exit 1
+          fi
+          resume_page="$(curl -fsS http://127.0.0.1:8088/projects/resume.html)"
+          printf '%s' "$resume_page" | grep -q '脱敏'
+          if printf '%s' "$resume_page" | grep -Eq 'https?://[^ ]*#resume=|\.pdf'; then
+            echo 'Private resume must not be published in the static site' >&2
             exit 1
           fi
 

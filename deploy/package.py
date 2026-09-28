@@ -11,7 +11,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 
 ROOT = Path(__file__).resolve().parents[1]
-FILES = ["index.html", "styles.css", "favicon.svg"]
+FILES = ["index.html", "projects.html", "repositories.html", "resume.html", "styles.css", "favicon.svg", "resume-access.js"]
 
 
 def canonical_text(path: Path) -> bytes:
@@ -31,7 +31,7 @@ commit = git("rev-parse", "HEAD") or "uncommitted"
 tree_state = "uncommitted" if commit == "uncommitted" else (
     "dirty" if git("status", "--porcelain", "--untracked-files=no") else "clean"
 )
-file_contents = {name: canonical_text(ROOT / name) for name in FILES}
+file_contents = {name: canonical_text(ROOT / "web" / name) for name in FILES}
 checksums = {name: sha256(content).hexdigest() for name, content in file_contents.items()}
 manifest = {
     "name": "project-index",

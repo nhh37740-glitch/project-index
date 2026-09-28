@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f6f2">
+  <meta name="description" content="项目演示、状态与源码入口。">
+  <title>项目展示 · Z.</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">跳转到正文</a>
+  <div class="shell">
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="Z. 首页">Z<span>.</span></a>
+      <nav class="nav" aria-label="主导航">
+        <a href="./projects.html" aria-current="page">项目</a>
+        <a href="./repositories.html">仓库</a>
+        <a href="./resume.html">公开简历</a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <header class="page-intro"><p class="eyebrow">PROJECTS / 01</p><h1>项目展示<span class="period">.</span></h1><p>每个入口标明实际状态。演示与源码分别链接，私有仓库需要 GitHub 权限。</p></header>
+      <section class="project-list" aria-label="项目列表">
+        <article class="project-row" id="radar">
+          <div class="project-index">01 <span>VISUALIZATION</span></div>
+          <div class="project-info"><h2>Radar Pose Demo</h2><p>Oxford RobotCar 雷达与双目图像、已保存位姿结果的真实数据回放。共 7,203 帧；不在浏览器中运行模型推理。</p><span class="tag">记录回放</span></div>
+          <div class="project-actions"><a href="http://43.153.176.182:8088/projects/radar/">查看演示 ↗</a><a href="https://github.com/nhh37740-glitch/radar-pose-demo" target="_blank" rel="noopener noreferrer">私有仓库 ↗</a></div>
+        </article>
+        <article class="project-row" id="media">
+          <div class="project-index">02 <span>MEDIA PLATFORM</span></div>
+          <div class="project-info"><h2>Media Workspace</h2><p>团队影音素材平台，覆盖断点续传、后台转码、权限控制和限时分享。</p><span class="tag tag-live">在线应用</span></div>
+          <div class="project-actions"><a href="http://43.153.176.182:8088/">打开应用 ↗</a></div>
+        </article>
+        <article class="project-row" id="go">
+          <div class="project-index">03 <span>AGENT RUNTIME</span></div>
+          <div class="project-info"><h2>CC Agent · Go</h2><p>Agent 运行核心与 Web 交互界面，组织模型、工具、SubAgent 与流式响应。</p><span class="tag tag-live">在线演示</span></div>
+          <div class="project-actions"><a href="http://43.153.176.182:8088/projects/apps/go/">查看演示 ↗</a><a href="https://github.com/nhh37740-glitch/cc-agent-go" target="_blank" rel="noopener noreferrer">私有仓库 ↗</a></div>
+        </article>
+        <article class="project-row" id="java">
+          <div class="project-index">04 <span>AGENT SERVICE</span></div>
+          <div class="project-info"><h2>CC Agent · Java</h2><p>Java 智能体服务，提供模型调用、任务执行与 Web 交互入口。</p><span class="tag tag-live">在线演示</span></div>
+          <div class="project-actions"><a href="http://43.153.176.182:8088/projects/apps/java/agent.html">查看演示 ↗</a><a href="https://github.com/nhh37740-glitch/cc-agent-java" target="_blank" rel="noopener noreferrer">私有仓库 ↗</a></div>
+        </article>
+        <article class="project-row" id="cpp">
+          <div class="project-index">05 <span>EDGE VISION</span></div>
+          <div class="project-info"><h2>Edge Agent</h2><p>面向视频流的 C++ 多模态 Agent。现有面板显示等待配置状态，模型未配置，当前无真实推理帧，不运行推理。</p><span class="tag">状态面板</span></div>
+          <div class="project-actions"><a href="http://43.153.176.182:8088/projects/apps/cpp/">打开面板 ↗</a><a href="https://github.com/nhh37740-glitch/cc-agent-cpp" target="_blank" rel="noopener noreferrer">私有仓库 ↗</a></div>
+        </article>
+        <article class="project-row" id="rag">
+          <div class="project-index">06 <span>KNOWLEDGE SYSTEM</span></div>
+          <div class="project-info"><h2>Dev Knowledge Agent</h2><p>模块化研发知识问答系统，结合文档检索、工具调用、会话记忆与回答链路。</p><span class="tag">私有访问</span></div>
+          <div class="project-actions"><a href="https://github.com/nhh37740-glitch/ai-rag-platform" target="_blank" rel="noopener noreferrer">私有仓库 ↗</a></div>
+        </article>
+      </section>
+      <aside class="note"><strong>关于访问</strong><p>公开演示无需仓库权限。源码仓库保留私有；模型密钥配置仅通过受保护的本地入口使用，切勿在公网 HTTP 页面输入密钥。</p></aside>
+    </main>
+
+    <footer class="site-footer"><span>Z. / PROJECTS</span><span>© 2026</span><a href="./">返回首页 ↑</a></footer>
+  </div>
+</body>
+</html>
