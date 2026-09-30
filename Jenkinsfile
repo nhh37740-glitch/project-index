@@ -95,6 +95,21 @@ pipeline {
         '''
       }
     }
+    stage('HTTPS local smoke') {
+      steps {
+        sh '''set -eu
+          base=https://portfolio.72945645.xyz
+          resolve=portfolio.72945645.xyz:443:127.0.0.1
+          for path in / /projects.html /repositories.html /resume.html \
+              /projects/radar/ /projects/apps/go/ \
+              /projects/apps/java/agent.html /projects/apps/cpp/; do
+            curl -fsS --resolve "$resolve" "$base$path" >/dev/null
+          done
+          status=$(curl -sS -o /dev/null -w '%{http_code}' --resolve "$resolve" "$base/api/resume")
+          test "$status" = 404
+        '''
+      }
+    }
   }
   post { always { echo "project-index build ${env.BUILD_NUMBER}: ${currentBuild.currentResult}" } }
 }

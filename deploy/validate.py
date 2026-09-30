@@ -49,7 +49,9 @@ for project_id in ("radar", "media", "go", "java", "cpp", "rag"):
 assert "7,203" in projects and "不在浏览器中运行模型推理" in projects
 assert "等待配置" in projects and "无真实推理帧" in projects
 assert "推理可用" not in projects and "在线推理" not in projects
-assert "http://43.153.176.182:8088/projects/radar/" in projects
+assert 'href="/projects/radar/"' in projects
+for path in ("/projects/apps/go/", "/projects/apps/java/agent.html", "/projects/apps/cpp/"):
+    assert f'href="{path}"' in projects
 assert "私有仓库" in projects
 repos = (public / "repositories.html").read_text(encoding="utf-8")
 assert repos.count("github.com/nhh37740-glitch/") >= 6

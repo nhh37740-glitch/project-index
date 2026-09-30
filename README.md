@@ -24,6 +24,8 @@ Jenkins 在 Linux 服务器运行 `deploy/validate.py`、`deploy/package.py`、�
 
 `resume-gateway/` 从仓库外的只读私有文件读取 PDF 和令牌 SHA-256 摘要，只有持有专属链接的访问者能获取完整文件。它需要同源 HTTPS 反向代理将 `/api/resume` 转发至 `127.0.0.1:18105`。部署细节见 `resume-gateway/README.md`。公开页面没有 PDF、联系信息或专属链接。
 
+`portfolio.72945645.xyz` 的独立 Nginx 虚拟主机配置在 `deploy/portfolio-https.conf`，监听 80/443，并把首页、四个演示入口及私有简历网关分开代理。DNS A 记录指向演示服务器且为 DNS-only；服务器上的 Certbot 通过 `deploy/portfolio-acme-bootstrap.conf` 所示 webroot 签发和自动续期证书。云防火墙需允许入站 TCP 443。现有 8088 Media Workspace 服务保留。
+
 Cloudflare Worker 绑定 `PORTFOLIO_KV` 和密文变量 `RESUME_TOKEN_SHA256`。KV 的 `public:<filename>` 来自 `web/`，私有键 `private:resume-pdf` 存放原始 PDF 字节。仅持有 256 位随机令牌的访问者能从 `/api/resume` 获取 PDF；令牌放在 `resume.html#resume=...` URL 片段中，前端先从地址栏移除片段，再发送 `Authorization` 请求。完整文件响应含 `no-store`、`noindex`、`no-referrer`。公开页面没有 PDF、联系信息或专属链接。
 
 Worker 可独立发布到 `portfolio.72945645.xyz`。更新公共页面时，将同一 `web/` 目录同步至 KV；更新完整简历时仅替换私有 KV 键。不得将 PDF、base64、令牌、摘要或 Cloudflare 凭证写入提交、Jenkins 制品或公开静态文件。
