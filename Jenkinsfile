@@ -8,6 +8,7 @@ pipeline {
     stage('Package') { steps { sh 'python3 deploy/package.py'; archiveArtifacts artifacts: 'dist/*.zip', fingerprint: true } }
     stage('Build image') { steps { sh 'sudo docker build --tag project-index:${BUILD_NUMBER} .' } }
     stage('Build resume gateway image') { steps { sh 'sudo docker build --tag portfolio-resume-gateway:${BUILD_NUMBER} resume-gateway' } }
+    stage('Gateway live smoke') { steps { sh 'python3 resume-gateway/verify_deployed.py /home/ubuntu/portfolio-private/resume.pdf /home/ubuntu/portfolio-private/resume-link.txt' } }
     stage('Smoke image') {
       steps {
         sh '''set -eu
