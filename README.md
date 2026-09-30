@@ -19,7 +19,7 @@
 服务器现有 Nginx 将 `/projects/radar/`、`/projects/apps/go/`、`/projects/apps/java/`、`/projects/apps/cpp/` 分别代理到独立 Docker 服务。主页 Docker 镜像只含 `web/`，不会复制 Radar 帧或其他项目的构建产物。Media Workspace 仍由 `/` 提供。
 
 当前域名继续由服务器 Nginx 提供：它要在同一域名下代理在线演示和受控的 `/api/resume` 完整简历入口。GitHub Pages 只能托管静态页面，无法承担这些代理路由。
-公开入口页位于 `https://nhh37740-glitch.github.io/`，由独立仓库 `nhh37740-glitch.github.io` 托管，只链接到正式主页，不复制本仓库内容。
+公开入口页位于 `https://nhh37740-glitch.github.io/`，由独立仓库 `nhh37740-glitch.github.io` 托管，目前链接到可访问的 `http://43.153.176.182:8088/projects/`；公网 443 验证通过后再切到正式 HTTPS 域名。入口页不复制本仓库内容。
 
 ## 构建与部署
 
