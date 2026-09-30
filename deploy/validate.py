@@ -19,6 +19,12 @@ root = Path(__file__).resolve().parents[1]
 public = root / "web"
 pages = ("index.html", "projects.html", "repositories.html", "resume.html")
 assets = ("styles.css", "favicon.svg", "resume-access.js")
+demo_routes = (
+    "/projects/radar/",
+    "/projects/apps/go/",
+    "/projects/apps/java/agent.html",
+    "/projects/apps/cpp/",
+)
 for name in (*pages, *assets):
     assert (public / name).is_file(), f"missing public asset: {name}"
 
@@ -35,6 +41,9 @@ for name in pages:
     for href in links.urls:
         if href.startswith(("http://", "https://", "#")):
             continue
+        if href.startswith("/"):
+            assert href in demo_routes, f"unexpected site route in {name}: {href}"
+            continue
         assert href.startswith("./"), f"unexpected link in {name}: {href}"
         destination = href[2:].split("#", 1)[0].split("?", 1)[0]
         if destination:
@@ -44,18 +53,17 @@ home = (public / "index.html").read_text(encoding="utf-8")
 for target in ("./projects.html", "./repositories.html", "./resume.html"):
     assert target in home, f"missing home entry: {target}"
 projects = (public / "projects.html").read_text(encoding="utf-8")
+repos = (public / "repositories.html").read_text(encoding="utf-8")
+resume = (public / "resume.html").read_text(encoding="utf-8")
 for project_id in ("radar", "media", "go", "java", "cpp", "rag"):
     assert f'id="{project_id}"' in projects, f"missing project: {project_id}"
 assert "7,203" in projects and "不在浏览器中运行模型推理" in projects
 assert "等待配置" in projects and "无真实推理帧" in projects
 assert "推理可用" not in projects and "在线推理" not in projects
-assert 'href="/projects/radar/"' in projects
-for path in ("/projects/apps/go/", "/projects/apps/java/agent.html", "/projects/apps/cpp/"):
+for path in demo_routes:
     assert f'href="{path}"' in projects
 assert "私有仓库" in projects
-repos = (public / "repositories.html").read_text(encoding="utf-8")
 assert repos.count("github.com/nhh37740-glitch/") >= 6
-resume = (public / "resume.html").read_text(encoding="utf-8")
 assert "公开简历" in resume and "完整简历" in resume
 assert "#resume=" not in resume, "capability link must not be embedded in public HTML"
 
