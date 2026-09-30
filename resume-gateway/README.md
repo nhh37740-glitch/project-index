@@ -41,6 +41,7 @@ The behavior tests use only a disposable dummy PDF and dummy token. No real priv
 ```sh
 cd /path/to/project-index/resume-gateway
 python3 -m unittest discover -s tests -v
+python3 verify_deployed.py /home/ubuntu/portfolio-private/resume.pdf /home/ubuntu/portfolio-private/resume-link.txt
 ```
 
 After integration, verify through the HTTPS origin: anonymous and wrong-token requests return 404; the designated link yields the original PDF; responses contain the privacy headers; the public repository and static assets contain neither PDF nor token. Do not print the private response body or token in test logs.
