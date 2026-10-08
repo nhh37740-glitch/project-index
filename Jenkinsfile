@@ -93,7 +93,7 @@ pipeline {
           curl -fsS http://127.0.0.1:8088/projects/radar/assets/radar/1547557604078984.jpg >/dev/null
           curl -fsS http://127.0.0.1:8088/projects/radar/assets/stereo/1547557604081434.jpg >/dev/null
         '''
-        sh 'python3 deploy/smoke-rag-demo.py http://127.0.0.1:8088/projects/apps/rag/'
+        sh 'python3 deploy/smoke-rag-demo.py http://127.0.0.1:8088/projects/apps/rag/ mock'
       }
     }
     stage('HTTPS local smoke') {

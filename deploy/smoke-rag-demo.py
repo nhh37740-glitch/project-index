@@ -5,6 +5,8 @@ import urllib.error
 import urllib.request
 
 base = sys.argv[1].rstrip('/') + '/'
+expected_provider = sys.argv[2] if len(sys.argv) > 2 else 'mock'
+assert expected_provider in ('mock', 'deepseek')
 
 def call(path, payload=None):
     data = json.dumps(payload).encode() if payload is not None else None
@@ -17,7 +19,7 @@ def call(path, payload=None):
 
 status, demo = call('api/demo')
 assert status == 200 and demo['public_demo'] and demo['read_only']
-assert demo['provider'] == 'deepseek' and demo['embedding'] == 'hash'
+assert demo['provider'] == expected_provider and demo['embedding'] == 'hash'
 assert call('api/chat', {})[0] in (403, 405)
 assert call('api/notebooks', {})[0] in (403, 405)
 status, result = call('api/demo/chat', {'question': demo['suggested_questions'][0]['question']})
