@@ -93,6 +93,7 @@ pipeline {
           curl -fsS http://127.0.0.1:8088/projects/radar/assets/radar/1547557604078984.jpg >/dev/null
           curl -fsS http://127.0.0.1:8088/projects/radar/assets/stereo/1547557604081434.jpg >/dev/null
         '''
+        sh 'python3 deploy/smoke-rag-demo.py http://127.0.0.1:8088/projects/apps/rag/'
       }
     }
     stage('HTTPS local smoke') {
@@ -102,7 +103,7 @@ pipeline {
           resolve=portfolio.72945645.xyz:443:127.0.0.1
           for path in / /projects.html /repositories.html /resume.html \
               /projects/radar/ /projects/apps/go/ \
-              /projects/apps/java/agent.html /projects/apps/cpp/; do
+              /projects/apps/java/agent.html /projects/apps/cpp/ /projects/apps/rag/; do
             curl -fsS --resolve "$resolve" "$base$path" >/dev/null
           done
           status=$(curl -sS -o /dev/null -w '%{http_code}' --resolve "$resolve" "$base/api/resume")

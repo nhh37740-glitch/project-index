@@ -24,6 +24,7 @@ demo_routes = (
     "/projects/apps/go/",
     "/projects/apps/java/agent.html",
     "/projects/apps/cpp/",
+    "/projects/apps/rag/",
 )
 for name in (*pages, *assets):
     assert (public / name).is_file(), f"missing public asset: {name}"
@@ -77,6 +78,7 @@ for required_route in (
     "location ^~ /projects/apps/go/",
     "location ^~ /projects/apps/java/",
     "location ^~ /projects/apps/cpp/",
+    "location ^~ /projects/apps/rag/",
 ):
     assert required_route in routes, f"missing app route: {required_route}"
 print("validated four public pages, project routes, local links, and resume privacy boundary")
