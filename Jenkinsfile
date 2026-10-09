@@ -97,6 +97,7 @@ pipeline {
           rag_page="$(curl -fsS http://127.0.0.1:8088/projects/apps/rag/)"
           printf '%s' "$rag_page" | grep -q 'Knowledge Studio'
         '''
+        sh 'python3 deploy/smoke-rag-demo.py http://127.0.0.1:8088/projects/apps/rag/ mock'
       }
     }
     stage('Domain routes local smoke') {
