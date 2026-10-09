@@ -20,7 +20,7 @@ On the Linux server, place the authoritative PDF and digest file outside the Git
 ```sh
 cd /path/to/project-index/resume-gateway
 install -d -m 700 /home/ubuntu/portfolio-private
-sh ./provision-private.sh /home/ubuntu/portfolio-private https://portfolio.72945645.xyz
+sh ./provision-private.sh /home/ubuntu/portfolio-private https://portfolio.72945645.xyz:8443
 sh ./run-container.sh /home/ubuntu/portfolio-private/resume.pdf /home/ubuntu/portfolio-private/resume-token.sha256
 ```
 
@@ -32,7 +32,7 @@ Run the script as the non-root file owner with passwordless `sudo docker` access
 
 To run the exact image that Jenkins has already built, set `RESUME_GATEWAY_IMAGE=portfolio-resume-gateway:<build-number>` and `RESUME_GATEWAY_SKIP_BUILD=1`; the script will only start that image.
 
-The designated link has the form `https://<public-host>/resume.html#resume=<token>`. The browser must remove the URL fragment from its address bar before making its same-origin `GET /api/resume` request with the Bearer header. The token must never be placed in a query string or in public HTML. The link grants access to anyone who possesses it; rotating the digest and restarting the container revokes the old link.
+The designated link has the form `https://<public-host>:8443/resume.html#resume=<token>`. The browser must remove the URL fragment from its address bar before making its same-origin `GET /api/resume` request with the Bearer header. The token must never be placed in a query string or in public HTML. The link grants access to anyone who possesses it; rotating the digest and restarting the container revokes the old link.
 
 ## Verify on the Linux server
 

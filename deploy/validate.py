@@ -24,6 +24,7 @@ demo_routes = (
     "/projects/apps/go/",
     "/projects/apps/java/agent.html",
     "/projects/apps/cpp/",
+    "/projects/apps/rag/",
 )
 for name in (*pages, *assets):
     assert (public / name).is_file(), f"missing public asset: {name}"
@@ -55,15 +56,16 @@ for target in ("./projects.html", "./repositories.html", "./resume.html"):
 projects = (public / "projects.html").read_text(encoding="utf-8")
 repos = (public / "repositories.html").read_text(encoding="utf-8")
 resume = (public / "resume.html").read_text(encoding="utf-8")
-for project_id in ("radar", "media", "go", "java", "cpp", "rag"):
+for project_id in ("radar", "media", "go", "java", "cpp", "rag", "qt-radar", "qt-device"):
     assert f'id="{project_id}"' in projects, f"missing project: {project_id}"
-assert "7,203" in projects and "不在浏览器中运行模型推理" in projects
+assert "7,203" in projects and "浏览器不运行模型推理" in projects
+assert "4,096" in projects and "Qt 设备工作台" in projects
 assert "等待配置" in projects and "无真实推理帧" in projects
 assert "推理可用" not in projects and "在线推理" not in projects
 for path in demo_routes:
     assert f'href="{path}"' in projects
 assert "私有仓库" in projects
-assert repos.count("github.com/nhh37740-glitch/") >= 6
+assert repos.count("github.com/nhh37740-glitch/") >= 7
 assert "公开简历" in resume and "完整简历" in resume
 assert "#resume=" not in resume, "capability link must not be embedded in public HTML"
 
@@ -77,6 +79,7 @@ for required_route in (
     "location ^~ /projects/apps/go/",
     "location ^~ /projects/apps/java/",
     "location ^~ /projects/apps/cpp/",
+    "location ^~ /projects/apps/rag/",
 ):
     assert required_route in routes, f"missing app route: {required_route}"
-print("validated four public pages, project routes, local links, and resume privacy boundary")
+print("validated four public pages, eight projects, routes, local links, and resume privacy boundary")

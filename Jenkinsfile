@@ -4,7 +4,7 @@ pipeline {
   options { timeout(time: 30, unit: 'MINUTES'); disableConcurrentBuilds(); timestamps(); buildDiscarder(logRotator(numToKeepStr: '20')) }
   stages {
     stage('Checkout') { steps { checkout scm } }
-    stage('Validate') { steps { sh 'python3 deploy/validate.py'; sh 'node worker/verify.mjs'; sh 'bash -n worker/publish-public.sh worker/publish-private.sh worker/install-resume-token.sh'; sh 'python3 -m unittest discover -s resume-gateway/tests -v'; sh 'sh -n resume-gateway/run-container.sh resume-gateway/provision-private.sh' } }
+    stage('Validate') { steps { sh 'python3 deploy/validate.py'; sh 'node worker/verify.mjs'; sh 'bash -n worker/publish-public.sh worker/publish-private.sh worker/install-resume-token.sh deploy/install-nginx-route.sh deploy/install-portfolio-vhost.sh'; sh 'python3 -m unittest discover -s resume-gateway/tests -v'; sh 'sh -n resume-gateway/run-container.sh resume-gateway/provision-private.sh' } }
     stage('Package') { steps { sh 'python3 deploy/package.py'; archiveArtifacts artifacts: 'dist/*.zip', fingerprint: true } }
     stage('Build image') { steps { sh 'sudo docker build --tag project-index:${BUILD_NUMBER} .' } }
     stage('Build resume gateway image') { steps { sh 'sudo docker build --tag portfolio-resume-gateway:${BUILD_NUMBER} resume-gateway' } }
@@ -31,6 +31,7 @@ pipeline {
         sh '''set -eu
           bash deploy/install-nginx-route.sh
           bash deploy/deploy.sh project-index:${BUILD_NUMBER}
+          bash deploy/install-portfolio-vhost.sh
         '''
       }
     }
@@ -45,7 +46,8 @@ pipeline {
           project_page="$(curl -fsS http://127.0.0.1:8088/projects/projects.html)"
           printf '%s' "$project_page" | grep -q '7,203'
           printf '%s' "$project_page" | grep -q 'Oxford RobotCar'
-          printf '%s' "$project_page" | grep -q '不在浏览器中运行模型推理'
+          printf '%s' "$project_page" | grep -q '浏览器不运行模型推理'
+          printf '%s' "$project_page" | grep -q 'Qt 设备工作台'
           printf '%s' "$project_page" | grep -q '模型未配置'
           printf '%s' "$project_page" | grep -q '不运行推理'
           if printf '%s' "$project_page" | grep -Eq '推理可用|在线推理'; then
@@ -92,21 +94,30 @@ pipeline {
           curl -fsS http://127.0.0.1:8088/projects/radar/app.js >/dev/null
           curl -fsS http://127.0.0.1:8088/projects/radar/assets/radar/1547557604078984.jpg >/dev/null
           curl -fsS http://127.0.0.1:8088/projects/radar/assets/stereo/1547557604081434.jpg >/dev/null
+          rag_page="$(curl -fsS http://127.0.0.1:8088/projects/apps/rag/)"
+          printf '%s' "$rag_page" | grep -q 'Knowledge Studio'
         '''
       }
     }
-    stage('HTTPS local smoke') {
+    stage('Domain routes local smoke') {
       steps {
         sh '''set -eu
-          base=https://portfolio.72945645.xyz
-          resolve=portfolio.72945645.xyz:443:127.0.0.1
+          http_base=http://portfolio.72945645.xyz
+          http_resolve=portfolio.72945645.xyz:80:127.0.0.1
+          tls_base=https://portfolio.72945645.xyz:8443
+          tls_resolve=portfolio.72945645.xyz:8443:127.0.0.1
           for path in / /projects.html /repositories.html /resume.html \
               /projects/radar/ /projects/apps/go/ \
-              /projects/apps/java/agent.html /projects/apps/cpp/; do
-            curl -fsS --resolve "$resolve" "$base$path" >/dev/null
+              /projects/apps/java/agent.html /projects/apps/cpp/ \
+              /projects/apps/rag/; do
+            curl -fsS --resolve "$http_resolve" "$http_base$path" >/dev/null
+            curl -fsS --resolve "$tls_resolve" "$tls_base$path" >/dev/null
           done
-          status=$(curl -sS -o /dev/null -w '%{http_code}' --resolve "$resolve" "$base/api/resume")
-          test "$status" = 404
+          for origin in "$http_base" "$tls_base"; do
+            if [ "$origin" = "$http_base" ]; then resolve="$http_resolve"; else resolve="$tls_resolve"; fi
+            status=$(curl -sS -o /dev/null -w '%{http_code}' --resolve "$resolve" "$origin/api/resume")
+            test "$status" = 404
+          done
         '''
       }
     }

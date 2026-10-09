@@ -14,12 +14,12 @@
 
 ## 页面与项目
 
-主页 `/projects/` 链接项目页、仓库页和公开简历页。公开名称依次为“雷达与图像回放”“影音素材平台”“Go 智能助手”“Java 智能助手”“C++ 视频状态面板”“研发文档问答”。雷达项目回放 Oxford RobotCar 全部 7,203 帧已记录数据，不在浏览器中运行模型推理；影音素材平台与 Go、Java 项目有在线入口；C++ 目前只有等待配置状态面板，没有真实推理帧；研发文档问答没有公开演示。源码仓库均保持私有，访问需要 GitHub 授权。
+主页 `/projects/` 链接项目页、仓库页和公开简历页。项目页列出八项作品，每项写明功能、输入输出、技术与演示状态。雷达网页回放 Oxford RobotCar 全部 7,203 帧记录，不运行模型推理；C++ 视频页当前只显示等待配置状态。文档问答的公开演示使用预设问题和公开资料；原始文档上传工作区仍仅在服务器本机开放。Qt 雷达回放和 Qt 设备工作台是 Windows 桌面程序，仓库保持私有。
 
 服务器现有 Nginx 将 `/projects/radar/`、`/projects/apps/go/`、`/projects/apps/java/`、`/projects/apps/cpp/` 分别代理到独立 Docker 服务。主页 Docker 镜像只含 `web/`，不会复制 Radar 帧或其他项目的构建产物。Media Workspace 仍由 `/` 提供。
 
 当前域名继续由服务器 Nginx 提供：它要在同一域名下代理在线演示和受控的 `/api/resume` 完整简历入口。GitHub Pages 只能托管静态页面，无法承担这些代理路由。
-公开入口页位于 `https://nhh37740-glitch.github.io/`，由独立仓库 `nhh37740-glitch.github.io` 托管，目前链接到可访问的 `http://43.153.176.182:8088/projects/`；公网 443 验证通过后再切到正式 HTTPS 域名。入口页不复制本仓库内容。
+公开入口页位于 `https://nhh37740-glitch.github.io/`，由独立仓库 `nhh37740-glitch.github.io` 托管，链接到 `http://portfolio.72945645.xyz/`。入口页不复制本仓库内容。
 
 ## 构建与部署
 
@@ -27,7 +27,7 @@ Jenkins 在 Linux 服务器运行 `deploy/validate.py`、`deploy/package.py`、�
 
 `resume-gateway/` 从仓库外的只读私有文件读取 PDF 和令牌 SHA-256 摘要，只有持有专属链接的访问者能获取完整文件。它需要同源 HTTPS 反向代理将 `/api/resume` 转发至 `127.0.0.1:18105`。部署细节见 `resume-gateway/README.md`。公开页面没有 PDF、联系信息或专属链接。
 
-`portfolio.72945645.xyz` 的独立 Nginx 虚拟主机配置在 `deploy/portfolio-https.conf`，监听 80/443，并把首页、四个演示入口及私有简历网关分开代理。DNS A 记录指向演示服务器且为 DNS-only；服务器上的 Certbot 通过 `deploy/portfolio-acme-bootstrap.conf` 所示 webroot 签发和自动续期证书。云防火墙需允许入站 TCP 443。现有 8088 Media Workspace 服务保留。
+`portfolio.72945645.xyz` 的独立 Nginx 虚拟主机配置在 `deploy/portfolio-https.conf`，监听 80 和 8443。80 提供主页和公开项目演示，并拒绝 `/api/resume`；8443 使用 TLS，提供相同页面及受控的完整简历入口。DNS A 记录指向演示服务器且为 DNS-only；Certbot 使用 `deploy/portfolio-acme-bootstrap.conf` 所示 webroot 签发和自动续期证书。云防火墙需允许入站 TCP 80；要从公网打开完整简历，还需允许 TCP 8443。8088 Media Workspace 服务保留。所有项目容器只监听服务器回环端口。
 
 Cloudflare Worker 绑定 `PORTFOLIO_KV` 和密文变量 `RESUME_TOKEN_SHA256`。KV 的 `public:<filename>` 来自 `web/`，私有键 `private:resume-pdf` 存放原始 PDF 字节。仅持有 256 位随机令牌的访问者能从 `/api/resume` 获取 PDF；令牌放在 `resume.html#resume=...` URL 片段中，前端先从地址栏移除片段，再发送 `Authorization` 请求。完整文件响应含 `no-store`、`noindex`、`no-referrer`。公开页面没有 PDF、联系信息或专属链接。
 
