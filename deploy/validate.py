@@ -64,8 +64,8 @@ assert "等待配置" in projects and "无真实推理帧" in projects
 assert "推理可用" not in projects and "在线推理" not in projects
 for path in demo_routes:
     assert f'href="{path}"' in projects
-assert "私有仓库" in projects
-assert repos.count("github.com/nhh37740-glitch/") >= 7
+assert "查看仓库" in projects
+assert repos.count("github.com/nhh37740-glitch/") >= 8
 assert "公开简历" in resume and "完整简历" in resume
 assert "#resume=" not in resume, "capability link must not be embedded in public HTML"
 
