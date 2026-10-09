@@ -82,4 +82,6 @@ for required_route in (
     "location ^~ /projects/apps/rag/",
 ):
     assert required_route in routes, f"missing app route: {required_route}"
+assert routes.count("location = /projects/apps/rag") == 1
+assert routes.count("location ^~ /projects/apps/rag/") == 1
 print("validated four public pages, eight projects, routes, local links, and resume privacy boundary")
