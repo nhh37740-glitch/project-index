@@ -96,3 +96,7 @@ assert "internal;" in admin and "@RAG_ADMIN_PROXY_TOKEN@" in admin
 assert "proxy_set_header Origin $http_origin;" in admin
 assert "127.0.0.1:18108" in admin and "127.0.0.1:18107" in admin
 assert "游客只能看和查" in projects
+verify_route = admin.split("location = /_rag_owner_verify {", 1)[1].split("}", 1)[0]
+assert "client_max_body_size 20m;" in verify_route
+assert "proxy_pass_request_body off;" in verify_route
+assert "error_page 413 = @rag_admin_upload_too_large;" in admin
