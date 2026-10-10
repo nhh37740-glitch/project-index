@@ -50,8 +50,8 @@
         </article>
         <article class="project-row" id="rag">
           <div class="project-index">06 <span>文档问答</span></div>
-          <div class="project-info"><h2>文档问答</h2><p>原项目支持上传文档后查找资料并回答问题。公开演示使用预设问题和公开中文资料，显示检索来源与执行记录；当前为离线 Mock 模式，不代表真实模型回答质量。</p><p class="project-flow"><strong>输入 → 输出</strong> 公开资料和预设问题 → 流程回答、来源和执行记录。</p><p class="project-stack">技术：Python、FastAPI、RAG、hash 检索；公开版不开放上传或密钥输入。</p><span class="tag tag-live">只读流程演示</span></div>
-          <div class="project-actions"><a href="/projects/apps/rag/">查看演示 ↗</a><a href="https://github.com/nhh37740-glitch/ai-rag-platform" target="_blank" rel="noopener noreferrer">查看仓库 ↗</a></div>
+          <div class="project-info"><h2>文档问答</h2><p>使用自由问题和公开中文资料问答，显示实际来源与执行记录。服务器不配置模型 key，默认展示 Mock 离线流程；可在 HTTPS 页面手动应用临时 key 调用 DeepSeek，刷新后清除。</p><p class="project-flow"><strong>输入 → 输出</strong> 公开资料和问题 → 回答、来源和执行记录。</p><p class="project-stack">技术：Python、FastAPI、Cython；Agent、RAG、数据三个中间模块，17 个二进制包，独立鉴权模块。游客只能看和查；管理员登录后可创建笔记本和导入文档。</p><span class="tag tag-live">v0.5.0 · 游客只读</span></div>
+          <div class="project-actions"><a href="https://portfolio.72945645.xyz:8443/projects/apps/rag/">查看演示 ↗</a><a href="https://github.com/nhh37740-glitch/ai-rag-platform" target="_blank" rel="noopener noreferrer">查看仓库 ↗</a></div>
         </article>
         <article class="project-row" id="qt-radar">
           <div class="project-index">07 <span>桌面程序</span></div>
@@ -64,7 +64,7 @@
           <div class="project-actions"><a href="https://github.com/nhh37740-glitch/qt-device-workbench" target="_blank" rel="noopener noreferrer">查看仓库 ↗</a></div>
         </article>
       </section>
-      <aside class="note"><strong>关于访问</strong><p>公开演示无需仓库权限。源码仓库均为私有。当前公开页面使用 HTTP，请勿输入密码或模型密钥。</p></aside>
+      <aside class="note"><strong>关于访问</strong><p>公开演示无需仓库权限。项目卡片提供仓库链接；文档问答的临时 key 从 HTTPS 演示入口手动配置。</p></aside>
     </main>
 
     <footer class="site-footer"><span>Z. / 项目</span><span>© 2026</span><a href="./">返回首页 ↑</a></footer>

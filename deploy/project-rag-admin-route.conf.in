@@ -1,0 +1,54 @@
+# Rendered on the server with its private proxy proof; never publish the output.
+location = /projects/apps/rag/admin/login/ {
+    return 308 /projects/apps/rag/admin/login;
+}
+location = /projects/apps/rag/admin/login {
+    proxy_pass http://127.0.0.1:18107/;
+    proxy_set_header Host $http_host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Rag-Proxy-Token "";
+    proxy_set_header X-Rag-User-Id "";
+    proxy_set_header X-Rag-Role "";
+    proxy_cache off;
+}
+location ^~ /projects/apps/rag/admin/auth/ {
+    if ($uri !~ "^/projects/apps/rag/admin/auth/(csrf|login|logout|login[.]js|login[.]css)$") { return 404; }
+    proxy_pass http://127.0.0.1:18107/;
+    proxy_set_header Host $http_host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Rag-Proxy-Token "";
+    proxy_set_header X-Rag-User-Id "";
+    proxy_set_header X-Rag-Role "";
+    proxy_cache off;
+    client_max_body_size 4k;
+}
+location = /_rag_owner_verify {
+    internal;
+    proxy_pass http://127.0.0.1:18107/verify;
+    proxy_pass_request_body off;
+    proxy_set_header Content-Length "";
+    proxy_set_header Cookie $http_cookie;
+    proxy_set_header X-Rag-Proxy-Token "@RAG_ADMIN_PROXY_TOKEN@";
+    proxy_set_header X-Rag-User-Id "";
+    proxy_set_header X-Rag-Role "";
+}
+location = /projects/apps/rag/admin { return 308 /projects/apps/rag/admin/; }
+location ^~ /projects/apps/rag/admin/ {
+    auth_request /_rag_owner_verify;
+    auth_request_set $rag_owner_id $upstream_http_x_rag_user_id;
+    auth_request_set $rag_owner_role $upstream_http_x_rag_role;
+    proxy_pass http://127.0.0.1:18108/;
+    proxy_http_version 1.1;
+    proxy_set_header Host $http_host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Rag-Proxy-Token "@RAG_ADMIN_PROXY_TOKEN@";
+    proxy_set_header X-Rag-User-Id $rag_owner_id;
+    proxy_set_header X-Rag-Role $rag_owner_role;
+    proxy_set_header Origin $http_origin;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_buffering off;
+    proxy_cache off;
+    proxy_read_timeout 100s;
+    client_max_body_size 20m;
+}
