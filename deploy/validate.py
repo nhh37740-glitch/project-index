@@ -63,7 +63,8 @@ assert "4,096" in projects and "Qt 设备工作台" in projects
 assert "等待配置" in projects and "无真实推理帧" in projects
 assert "推理可用" not in projects and "在线推理" not in projects
 for path in demo_routes:
-    assert f'href="{path}"' in projects
+    destination = "https://portfolio.72945645.xyz:8443" + path if path == "/projects/apps/rag/" else path
+    assert f'href="{destination}"' in projects
 assert "查看仓库" in projects
 assert repos.count("github.com/nhh37740-glitch/") >= 8
 assert "公开简历" in resume and "完整简历" in resume
@@ -84,4 +85,14 @@ for required_route in (
     assert required_route in routes, f"missing app route: {required_route}"
 assert routes.count("location = /projects/apps/rag") == 1
 assert routes.count("location ^~ /projects/apps/rag/") == 1
+rag_route = routes.split("location ^~ /projects/apps/rag/ {", 1)[1].split("}", 1)[0]
+assert "proxy_set_header Host $http_host;" in rag_route, "RAG must preserve the HTTPS origin port"
+assert "v0.5.0" in projects and "手动应用临时 key" in projects
 print("validated four public pages, eight projects, routes, local links, and resume privacy boundary")
+
+admin = (root / "deploy/project-rag-admin-route.conf.in").read_text(encoding="utf-8")
+assert "auth_request /_rag_owner_verify;" in admin
+assert "internal;" in admin and "@RAG_ADMIN_PROXY_TOKEN@" in admin
+assert "proxy_set_header Origin $http_origin;" in admin
+assert "127.0.0.1:18108" in admin and "127.0.0.1:18107" in admin
+assert "游客只能看和查" in projects
