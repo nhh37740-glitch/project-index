@@ -24,6 +24,9 @@ location ^~ /projects/apps/rag/admin/auth/ {
 }
 location = /_rag_owner_verify {
     internal;
+    # auth_request retains the parent's Content-Length even though the
+    # verification upstream receives no body. Match the upload route limit.
+    client_max_body_size 20m;
     proxy_pass http://127.0.0.1:18107/verify;
     proxy_pass_request_body off;
     proxy_set_header Content-Length "";
@@ -51,4 +54,9 @@ location ^~ /projects/apps/rag/admin/ {
     proxy_cache off;
     proxy_read_timeout 100s;
     client_max_body_size 20m;
+    error_page 413 = @rag_admin_upload_too_large;
+}
+location @rag_admin_upload_too_large {
+    default_type application/json;
+    return 413 '{"detail":"上传请求超过 20 MB，请拆分文件后重试。"}';
 }
