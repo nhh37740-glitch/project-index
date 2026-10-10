@@ -63,6 +63,11 @@ pipeline {
 
           go_page="$(curl -fsS http://127.0.0.1:8088/projects/apps/go/)"
           printf '%s' "$go_page" | grep -q 'projects/apps/go/api/'
+          printf '%s' "$go_page" | grep -q 'src="/projects/apps/go/deepseek-key-settings.js"'
+          go_settings="$(curl -fsS http://127.0.0.1:8088/projects/apps/go/deepseek-key-settings.js)"
+          printf '%s' "$go_settings" | grep -q '/projects/apps/go/api/settings/deepseek-key'
+          curl -fsS http://127.0.0.1:8088/projects/apps/go/deepseek-key-settings.css >/dev/null
+          curl -fsS http://127.0.0.1:8088/projects/apps/go/api/settings/deepseek-key | python3 -c 'import json,sys; s=json.load(sys.stdin); assert isinstance(s.get("configured"),bool); assert "apiKey" not in s'
           java_page="$(curl -fsS http://127.0.0.1:8088/projects/apps/java/agent.html)"
           printf '%s' "$java_page" | grep -Fq "new URL('api', window.location.href)"
           if printf '%s' "$java_page" | grep -Eiq 'https?://localhost(:[0-9]+)?/api'; then
