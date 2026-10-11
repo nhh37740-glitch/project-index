@@ -88,7 +88,8 @@ assert routes.count("location ^~ /projects/apps/rag/") == 1
 rag_route = routes.split("location ^~ /projects/apps/rag/ {", 1)[1].split("}", 1)[0]
 assert "proxy_set_header Host $http_host;" in rag_route, "RAG must preserve the HTTPS origin port"
 rag_card = projects.split('id="rag"', 1)[1].split('</article>', 1)[0]
-assert "v0.6.0" in rag_card and "OpenRouter" in rag_card and "免费" in rag_card
+assert "v0.8.0" in rag_card and "OpenRouter" in rag_card and "免费" in rag_card
+assert all(text in rag_card for text in ['默认使用简体中文', '指定笔记本', '编辑者', '全局管理员', '归档', '恢复', '公开内置资料始终只读'])
 assert "全站" in rag_card and "20" in rag_card and "北京时间" in rag_card
 assert "默认 Mock" not in rag_card and "手动应用临时 key" not in rag_card
 print("validated four public pages, eight projects, routes, local links, and resume privacy boundary")
