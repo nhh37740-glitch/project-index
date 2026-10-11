@@ -87,7 +87,10 @@ assert routes.count("location = /projects/apps/rag") == 1
 assert routes.count("location ^~ /projects/apps/rag/") == 1
 rag_route = routes.split("location ^~ /projects/apps/rag/ {", 1)[1].split("}", 1)[0]
 assert "proxy_set_header Host $http_host;" in rag_route, "RAG must preserve the HTTPS origin port"
-assert "v0.5.0" in projects and "手动应用临时 key" in projects
+rag_card = projects.split('id="rag"', 1)[1].split('</article>', 1)[0]
+assert "v0.6.0" in rag_card and "OpenRouter" in rag_card and "免费" in rag_card
+assert "全站" in rag_card and "20" in rag_card and "北京时间" in rag_card
+assert "默认 Mock" not in rag_card and "手动应用临时 key" not in rag_card
 print("validated four public pages, eight projects, routes, local links, and resume privacy boundary")
 
 admin = (root / "deploy/project-rag-admin-route.conf.in").read_text(encoding="utf-8")

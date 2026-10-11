@@ -1,6 +1,9 @@
 pipeline {
   agent { label 'media-workspace-agent' }
-  parameters { booleanParam(name: 'DEPLOY', defaultValue: false, description: '验证通过后更新项目展示页') }
+  parameters {
+    booleanParam(name: 'DEPLOY', defaultValue: false, description: '验证通过后更新项目展示页')
+    booleanParam(name: 'STATIC_ONLY', defaultValue: false, description: '仅发布静态页面，保留现有共用 Nginx 路由')
+  }
   options { timeout(time: 30, unit: 'MINUTES'); disableConcurrentBuilds(); timestamps(); buildDiscarder(logRotator(numToKeepStr: '20')) }
   stages {
     stage('Checkout') { steps { checkout scm } }
@@ -29,9 +32,9 @@ pipeline {
       when { expression { params.DEPLOY } }
       steps {
         sh '''set -eu
-          bash deploy/install-nginx-route.sh
+          if [ "${STATIC_ONLY:-false}" != true ]; then bash deploy/install-nginx-route.sh; fi
           bash deploy/deploy.sh project-index:${BUILD_NUMBER}
-          bash deploy/install-portfolio-vhost.sh
+          if [ "${STATIC_ONLY:-false}" != true ]; then bash deploy/install-portfolio-vhost.sh; fi
         '''
       }
     }
@@ -102,7 +105,7 @@ pipeline {
           rag_page="$(curl -fsS http://127.0.0.1:8088/projects/apps/rag/)"
           printf '%s' "$rag_page" | grep -q 'Knowledge Studio'
         '''
-        sh 'python3 deploy/smoke-rag-demo.py http://127.0.0.1:8088/projects/apps/rag/ mock'
+        sh 'python3 deploy/smoke-rag-demo.py http://127.0.0.1:8088/projects/apps/rag/ openrouter --metadata-only'
       }
     }
     stage('Domain routes local smoke') {
